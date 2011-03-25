@@ -1,0 +1,19 @@
+Name:                language-csharp
+Version:             0.1
+Synopsis:            C# source code analysis.
+Description:         C# source code analysis.
+Homepage:            http://github.com/jystic/language-csharp
+License:             BSD3
+License-file:        LICENSE
+Author:              Jacob Stanley
+Maintainer:          Jacob Stanley <jacob@stanley.io>
+Category:            Language
+Build-type:          Simple
+Cabal-version:       >=1.6
+
+Extra-source-files:
+
+Executable language-csharp
+  Main-is: Main
+  Build-depends:
+    base == 4.*

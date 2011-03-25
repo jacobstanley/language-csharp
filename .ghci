@@ -1,0 +1,3 @@
+:set -hide-package monads-fd
+:set -isrc
+:set -fno-warn-unused-do-bind
