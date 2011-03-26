@@ -5,15 +5,14 @@ module Language.CSharp.Parser
     ) where
 
 import           Control.Applicative hiding (many, (<|>))
-import           Control.Monad.Identity (Identity)
 import           Data.ByteString (ByteString)
 import           Prelude hiding ((>>), (>>=))
 import qualified Prelude as P ((>>), (>>=))
 import           Text.Parsec
 import           Text.Parsec.ByteString
-import qualified Text.Parsec.Token as T
 
 import           Language.CSharp.Syntax
+import           Language.CSharp.Token
 
 -- A trick to allow >> and >>=, normally infixr 1, to be
 -- used inside branches of <|>, which is declared as infixl 1.
@@ -46,7 +45,7 @@ class_ :: [Modifier] -> P TypeDecl
 class_ ms = do
     reserved "class"
     Class <$> return ms
-          <*> identifier
+          <*> ident
           <*> braces (many member)
 
 member :: P Method
@@ -55,7 +54,7 @@ member = withModifiers method
 method :: [Modifier] -> P Method
 method ms = Method <$> return ms
                    <*> returnType
-                   <*> (identifier <?> "method identifier")
+                   <*> (ident <?> "method identifier")
                    <*> formalParams
                    <*> block
                    <?> "method declaration"
@@ -65,7 +64,7 @@ localVar = LocalVar <$> type_
                     <*> commaSep varDecl
 
 varDecl :: P VarDecl
-varDecl = VarDecl <$> identifier
+varDecl = VarDecl <$> ident
                   <*> optionMaybe varInit
 
 varInit :: P VarInit
@@ -103,7 +102,7 @@ formalParams = parens (commaSep formalParam) <?> "formal parameter list"
 formalParam :: P FormalParam
 formalParam = FormalParam <$> many paramModifier
                           <*> type_
-                          <*> identifier
+                          <*> ident
 
 ------------------------------------------------------------------------
 -- Modifiers
@@ -154,74 +153,10 @@ simpleType = reserved "bool"    >> return BoolT
          <|> reserved "decimal" >> return DecimalT
 
 ------------------------------------------------------------------------
--- General C# token parsers
+-- Names and identifiers
 
 name :: P Name
-name = Name <$> dotSep1 identifier
+name = Name <$> dotSep1 ident
 
-identifier :: P Ident
-identifier = Ident <$> T.identifier csharp
-
-reserved :: String -> P ()
-reserved = T.reserved csharp
-
-reservedOp :: String -> P ()
-reservedOp = T.reservedOp csharp
-
-natural :: P Integer
-natural = T.natural csharp
-
-braces :: P a -> P a
-braces = T.braces csharp
-
-parens :: P a -> P a
-parens = T.parens csharp
-
-commaSep :: P a -> P [a]
-commaSep = T.commaSep csharp
-
-dotSep1 :: P a -> P [a]
-dotSep1 p = sepBy1 p dot
-
-dot :: P String
-dot = T.dot csharp
-
-semi :: P String
-semi = T.semi csharp
-
-------------------------------------------------------------------------
--- Lexer
-
-csharp :: T.GenTokenParser ByteString st Identity
-csharp = T.makeTokenParser csharpDef
-
-csharpDef :: T.GenLanguageDef ByteString st Identity
-csharpDef = T.LanguageDef
-    { T.commentStart   = "/*"
-    , T.commentEnd     = "*/"
-    , T.commentLine    = "//"
-    , T.nestedComments = True
-    , T.identStart     = letter <|> char '_'
-    , T.identLetter    = alphaNum <|> char '_'
-    , T.opStart        = T.opLetter csharpDef
-    , T.opLetter       = oneOf ":!#$%&*+./<=>?@\\^|-~"
-    , T.reservedNames  =
-        [ "abstract" , "as" , "base" , "bool" , "break"
-        , "byte" , "case" , "catch" , "char" , "checked"
-        , "class" , "const" , "continue" , "decimal" , "default"
-        , "delegate" , "do" , "double" , "else" , "enum"
-        , "event" , "explicit" , "extern" , "false" , "finally"
-        , "fixed" , "float" , "for" , "foreach" , "goto"
-        , "if" , "implicit" , "in" , "int" , "interface"
-        , "internal" , "is" , "lock" , "long" , "namespace"
-        , "new" , "null" , "object" , "operator" , "out"
-        , "override" , "params" , "private" , "protected" , "public"
-        , "readonly" , "ref" , "return" , "sbyte" , "sealed"
-        , "short" , "sizeof" , "stackalloc" , "static" , "string"
-        , "struct" , "switch" , "this" , "throw" , "true"
-        , "try" , "typeof" , "uint" , "ulong" , "unchecked"
-        , "unsafe" , "ushort" , "using" , "virtual" , "void"
-        , "volatile" , "while"]
-    , T.reservedOpNames = []
-    , T.caseSensitive   = True
-    }
+ident :: P Ident
+ident = Ident <$> identifier
