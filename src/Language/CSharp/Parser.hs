@@ -198,11 +198,11 @@ csharp = T.makeTokenParser csharpDef
 csharpDef :: T.GenLanguageDef ByteString st Identity
 csharpDef = T.LanguageDef
     { T.commentStart   = "/*"
-    , T.commentEnd	   = "*/"
-    , T.commentLine	   = "//"
+    , T.commentEnd     = "*/"
+    , T.commentLine    = "//"
     , T.nestedComments = True
-    , T.identStart	   = letter <|> char '_'
-    , T.identLetter	   = alphaNum <|> char '_'
+    , T.identStart     = letter <|> char '_'
+    , T.identLetter    = alphaNum <|> char '_'
     , T.opStart        = T.opLetter csharpDef
     , T.opLetter       = oneOf ":!#$%&*+./<=>?@\\^|-~"
     , T.reservedNames  =
@@ -223,5 +223,5 @@ csharpDef = T.LanguageDef
         , "unsafe" , "ushort" , "using" , "virtual" , "void"
         , "volatile" , "while"]
     , T.reservedOpNames = []
-    , T.caseSensitive = True
+    , T.caseSensitive   = True
     }
