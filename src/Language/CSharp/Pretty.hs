@@ -23,29 +23,57 @@ render' = render . pretty
 -- Top level
 
 instance Pretty CompilationUnit where
-    pretty (CompilationUnit ns) = vcatMap ns
+    pretty (CompilationUnit ns) = vcatSep ns
 
 instance Pretty Namespace where
     pretty (Namespace n ts) =
         text "namespace" <+> pretty n
-        $+$ vcatBlock ts
+        $+$ block (vcatSep ts)
+
+------------------------------------------------------------------------
+-- Declarations
 
 instance Pretty TypeDecl where
     pretty (Class mds n ms) =
         hcatMap mds <+> text "class" <+> pretty n
-        $+$ vcatBlock ms
+        $+$ block (vcatSep ms)
 
 instance Pretty Method where
-    pretty (Method ms t n ps b) =
+    pretty (Method ms t n ps stmts) =
         hcatMap ms <+> pretty t <+> pretty n <> parens (hcatComma ps)
-        $+$ pretty b
+        $+$ block (vcatMap stmts)
 
 instance Pretty FormalParam where
     pretty (FormalParam ms t n) =
         hcatMap ms <+> pretty t <+> pretty n
 
-instance Pretty MethodBody where
-    pretty MethodBody = block empty
+instance Pretty VarDecl where
+    pretty (VarDecl n Nothing)  = pretty n
+    pretty (VarDecl n (Just d)) =
+        pretty n <+> equals <+> pretty d
+
+instance Pretty VarInit where
+    pretty (InitExp exp) = pretty exp
+
+------------------------------------------------------------------------
+-- Statements
+
+instance Pretty Stmt where
+    pretty (LocalVar t vds) = pretty t <+> hcatComma vds <> semi
+
+------------------------------------------------------------------------
+-- Expressions
+
+instance Pretty Exp where
+    pretty (Lit lit) = pretty lit
+
+instance Pretty Literal where
+    pretty (Bool True)  = text "true"
+    pretty (Bool False) = text "false"
+    pretty (Int n)      = integer n
+
+------------------------------------------------------------------------
+-- Types
 
 instance Pretty (Maybe Type) where
     pretty Nothing  = text "void"
@@ -55,8 +83,19 @@ instance Pretty Type where
     pretty (SimpleType st) = pretty st
 
 instance Pretty SimpleType where
-    pretty Int    = text "int"
-    pretty Double = text "double"
+    pretty BoolT    = text "bool"
+    pretty SByteT   = text "sbyte"
+    pretty ByteT    = text "byte"
+    pretty ShortT   = text "short"
+    pretty UShortT  = text "ushort"
+    pretty IntT     = text "int"
+    pretty UIntT    = text "uint"
+    pretty LongT    = text "long"
+    pretty ULongT   = text "ulong"
+    pretty CharT    = text "char"
+    pretty FloatT   = text "float"
+    pretty DoubleT  = text "double"
+    pretty DecimalT = text "decimal"
 
 instance Pretty Modifier where
     pretty New       = text "new"
@@ -97,8 +136,11 @@ block x = char '{'
       $+$ nest indent x
       $+$ char '}'
 
-vcatBlock :: Pretty a => [a] -> Doc
-vcatBlock = block . vcatMap
+blank :: Doc
+blank = nest (-10000) (text "")
+
+vcatSep :: Pretty a => [a] -> Doc
+vcatSep = vcat . intersperse blank . map pretty
 
 vcatMap :: Pretty a => [a] -> Doc
 vcatMap = vcat . map pretty

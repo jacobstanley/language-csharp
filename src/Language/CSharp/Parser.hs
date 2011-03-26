@@ -23,7 +23,7 @@ import           Language.CSharp.Syntax
 infixr 2 >>, >>=
 
 ------------------------------------------------------------------------
--- Parser
+-- Top level
 
 type P = GenParser ByteString ()
 
@@ -35,6 +35,9 @@ namespace = do
     reserved "namespace"
     Namespace <$> name
               <*> braces (many typeDecl)
+
+------------------------------------------------------------------------
+-- Declarations
 
 typeDecl :: P TypeDecl
 typeDecl = withModifiers class_ <?> "type declaration"
@@ -54,11 +57,42 @@ method ms = Method <$> return ms
                    <*> returnType
                    <*> (identifier <?> "method identifier")
                    <*> formalParams
-                   <*> methodBody
+                   <*> block
                    <?> "method declaration"
 
-methodBody :: P MethodBody
-methodBody = braces (T.whiteSpace csharp) >> return MethodBody
+localVar :: P Stmt
+localVar = LocalVar <$> type_
+                    <*> commaSep varDecl
+
+varDecl :: P VarDecl
+varDecl = VarDecl <$> identifier
+                  <*> optionMaybe varInit
+
+varInit :: P VarInit
+varInit = reservedOp "=" >> InitExp <$> expression
+
+------------------------------------------------------------------------
+-- Statements
+
+block :: P [Stmt]
+block = braces $ many statement
+
+statement :: P Stmt
+statement = st localVar
+  where
+    -- semi-colon terminated
+    st p = do { x <- p; semi; return x }
+
+------------------------------------------------------------------------
+-- Expressions
+
+expression :: P Exp
+expression = Lit <$> literal
+
+literal :: P Literal
+literal = reserved "true" >> return (Bool True)
+      <|> reserved "false" >> return (Bool False)
+      <|> Int <$> natural
 
 ------------------------------------------------------------------------
 -- Formal Parameters
@@ -106,8 +140,18 @@ returnType = reserved "void" >> return Nothing
          <?> "return type"
 
 simpleType :: P SimpleType
-simpleType = reserved "int"    >> return Int
-         <|> reserved "double" >> return Double
+simpleType = reserved "bool"    >> return BoolT
+         <|> reserved "sbyte"   >> return SByteT
+         <|> reserved "short"   >> return ShortT
+         <|> reserved "ushort"  >> return UShortT
+         <|> reserved "int"     >> return IntT
+         <|> reserved "uint"    >> return UIntT
+         <|> reserved "long"    >> return LongT
+         <|> reserved "ulong"   >> return ULongT
+         <|> reserved "char"    >> return CharT
+         <|> reserved "float"   >> return FloatT
+         <|> reserved "double"  >> return DoubleT
+         <|> reserved "decimal" >> return DecimalT
 
 ------------------------------------------------------------------------
 -- General C# token parsers
@@ -120,6 +164,12 @@ identifier = Ident <$> T.identifier csharp
 
 reserved :: String -> P ()
 reserved = T.reserved csharp
+
+reservedOp :: String -> P ()
+reservedOp = T.reservedOp csharp
+
+natural :: P Integer
+natural = T.natural csharp
 
 braces :: P a -> P a
 braces = T.braces csharp
@@ -136,8 +186,8 @@ dotSep1 p = sepBy1 p dot
 dot :: P String
 dot = T.dot csharp
 
-lexeme :: P a -> P a
-lexeme = T.lexeme csharp
+semi :: P String
+semi = T.semi csharp
 
 ------------------------------------------------------------------------
 -- Lexer

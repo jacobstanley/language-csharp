@@ -1,6 +1,7 @@
 module Language.CSharp.Syntax where
 
 ------------------------------------------------------------------------
+-- Top level
 
 data CompilationUnit = CompilationUnit [Namespace]
     deriving (Eq, Show)
@@ -8,24 +9,62 @@ data CompilationUnit = CompilationUnit [Namespace]
 data Namespace = Namespace Name [TypeDecl]
     deriving (Eq, Show)
 
+------------------------------------------------------------------------
+-- Declarations
+
 data TypeDecl = Class [Modifier] Ident [Method]
     deriving (Eq, Show)
 
-data Method = Method [Modifier] (Maybe Type) Ident [FormalParam] MethodBody
+data Method = Method [Modifier] (Maybe Type) Ident [FormalParam] [Stmt]
     deriving (Eq, Show)
 
 data FormalParam = FormalParam [ParamModifier] Type Ident
     deriving (Eq, Show)
 
-data MethodBody = MethodBody
+data VarDecl = VarDecl Ident (Maybe VarInit)
     deriving (Eq, Show)
+
+data VarInit = InitExp Exp
+    deriving (Eq, Show)
+
+------------------------------------------------------------------------
+-- Statements
+
+data Stmt = LocalVar Type [VarDecl]
+    deriving (Eq, Show)
+
+------------------------------------------------------------------------
+-- Expressions
+
+data Exp = Lit Literal
+    deriving (Eq, Show)
+
+data Literal
+    = Bool Bool
+    | Int Integer
+    deriving (Eq, Show)
+
+------------------------------------------------------------------------
+-- Types
 
 data Type = SimpleType SimpleType
     deriving (Eq, Show)
 
 data SimpleType
-    = Int
-    | Double
+    = BoolT
+    | SByteT
+    | ByteT
+    | ShortT
+    | UShortT
+    | IntT
+    | UIntT
+    | LongT
+    | ULongT
+    | CharT
+    | FloatT
+    | DoubleT
+    | DecimalT
+    | VarT
     deriving (Eq, Show)
 
 data Modifier
@@ -37,8 +76,8 @@ data Modifier
     | Abstract
     | Virtual
     | Override
-    | Sealed
     | Static
+    | Sealed
     | Extern
     | Unsafe
     deriving (Eq, Show)

@@ -11,7 +11,7 @@ import System.Process
 main :: IO ()
 main = do
     let input = "test/Test.cs"
-        output = addExtension input ".pretty"
+        output = replaceExtension input ".pretty.cs"
 
     result <- parseFromFile compilationUnit input
     case result of
