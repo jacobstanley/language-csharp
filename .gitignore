@@ -1,3 +1,4 @@
 *.swp
 /dist
 *.pretty.cs
+src/Language/CSharp/Lexer.hs
