@@ -11,6 +11,11 @@ import           Numeric
 
 %wrapper "posn-bytestring"
 
+$any     = [.\n\r]
+@newline = [\n\r] | \r\n
+@comment = "/*" $any* "*/"
+         | "//" .* @newline
+
 -- C# actually defines a letter to be any character (or escape sequence)
 -- from the Unicode classes Lu, Ll, Lt, Lm, Lo or Nl. Identifiers must
 -- start with a letter or an underscore, but can then also contain
@@ -26,16 +31,14 @@ $sign      = [\+\-]
 @real_suffix = [fFdDmM]
 @exponent    = [eE] $sign? $digit+
 
-$single_character = [^\r\n\'\\]
-@simple_escape    = \\ [\'\"\0\a\b\f\n\r\t\v\\]
-@hex_escape       = \\x $hex_digit{1,4}
-@unicode_escape   = \\u $hex_digit{4} | \\U $hex_digit{8}
-@character        = $single_character | @simple_escape | @hex_escape | @unicode_escape
+@simple_escape  = \\ [0abfnrtv\'\"\\]
+@hex_escape     = \\x $hex_digit{1,4}
+@unicode_escape = \\u $hex_digit{4} | \\U $hex_digit{8}
+@escapes        = @simple_escape | @hex_escape | @unicode_escape
 
-@newline = [\n\r] | \r\n
-@any     = . | @newline
-@comment = "/*" @any* "*/"
-         | "//" .* @newline
+@character          = [^\'\\] | @escapes
+@string_character   = [^\"\\] | @escapes
+@verbatim_character = $any # \" | \"\"
 
 tokens :-
 
@@ -145,8 +148,10 @@ $digit+ \. $digit+ @exponent? @real_suffix? { stringTok Tok_RealLit }
            $digit+ @exponent  @real_suffix? { stringTok Tok_RealLit }
            $digit+            @real_suffix  { stringTok Tok_RealLit }
 
--- Character literals
-\' @character \' { stringTok Tok_CharLit }
+-- Character / String literals
+\' @character \'             { stringTok (Tok_CharLit . drop 1 . init)     }
+\" @string_character* \"     { stringTok (Tok_StringLit . drop 1 . init)   }
+\@\" @verbatim_character* \" { stringTok (Tok_VerbatimLit . drop 2 . init) }
 
 -- Identifiers
 $ident_start $ident_part* { stringTok Tok_Ident }
@@ -265,6 +270,8 @@ data Token
     | Tok_IntLit String
     | Tok_RealLit String
     | Tok_CharLit String
+    | Tok_StringLit String
+    | Tok_VerbatimLit String
 
   deriving (Eq, Show)
 
