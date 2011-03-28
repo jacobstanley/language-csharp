@@ -6,13 +6,16 @@ import qualified Data.ByteString.Lazy.Char8 as L
 import           Language.CSharp.Lexer
 import           Language.CSharp.Parser
 import           Language.CSharp.Pretty
+import           System.Environment
 import           System.FilePath
 import           System.Process
 
 main :: IO ()
 main = do
-    let input = "test/Test2.cs"
-        output = replaceExtension input ".pretty.cs"
+    args <- getArgs
+
+    let input = if length args == 0 then "test/Test2.cs" else head args
+        --output = replaceExtension input ".pretty.cs"
 
     bs <- L.readFile input
     print (lexer bs)

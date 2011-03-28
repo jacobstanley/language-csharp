@@ -16,6 +16,8 @@ $any     = [.\n\r]
 @comment = "/*" $any* "*/"
          | "//" .* @newline
 
+@preprocessor = \# .* @newline
+
 -- C# actually defines a letter to be any character (or escape sequence)
 -- from the Unicode classes Lu, Ll, Lt, Lm, Lo or Nl. Identifiers must
 -- start with a letter or an underscore, but can then also contain
@@ -44,6 +46,7 @@ tokens :-
 
 $white+  ;
 @comment ;
+@preprocessor ;
 
 -- Keywords
 abstract   { constTok Tok_Abstract   }
@@ -131,12 +134,50 @@ while      { constTok Tok_While      }
 \] { constTok Tok_RBracket }
 \{ { constTok Tok_LBrace   }
 \} { constTok Tok_RBrace   }
+\: { constTok Tok_Colon    }
 \; { constTok Tok_Semi     }
 \, { constTok Tok_Comma    }
 \. { constTok Tok_Dot      }
 
 -- Operators
-\= { constTok Tok_Assign }
+\+     { constTok Tok_Plus       }
+\-     { constTok Tok_Minus      }
+\*     { constTok Tok_Star       }
+\/     { constTok Tok_Slash      }
+\%     { constTok Tok_Percent    }
+\&     { constTok Tok_Amp        }
+\|     { constTok Tok_Pipe       }
+\^     { constTok Tok_Caret      }
+\!     { constTok Tok_Not        }
+\~     { constTok Tok_Tilde      }
+\=     { constTok Tok_Assign     }
+\?     { constTok Tok_Question   }
+\?\?   { constTok Tok_Coalesce   }
+\:\:   { constTok Tok_NameQual   }
+\+\+   { constTok Tok_Inc        }
+\-\-   { constTok Tok_Dec        }
+\&\&   { constTok Tok_And        }
+\|\|   { constTok Tok_Or         }
+\-\>   { constTok Tok_Arrow      }
+\=\=   { constTok Tok_Eq         }
+\!\=   { constTok Tok_NotEq      }
+\<     { constTok Tok_Lt         }
+\<\=   { constTok Tok_LtEq       }
+\>     { constTok Tok_Gt         }
+\>\=   { constTok Tok_GtEq       }
+\<\<   { constTok Tok_ShiftL     }
+\>\>   { constTok Tok_ShiftR     }
+\+\=   { constTok Tok_AssPlus    }
+\-\=   { constTok Tok_AssMinus   }
+\*\=   { constTok Tok_AssStar    }
+\/\=   { constTok Tok_AssSlash   }
+\%\=   { constTok Tok_AssPercent }
+\&\=   { constTok Tok_AssAmp     }
+\|\=   { constTok Tok_AssPipe    }
+\^\=   { constTok Tok_AssCaret   }
+\<\<\= { constTok Tok_AssShiftL  }
+\>\>\= { constTok Tok_AssShiftR  }
+\=\>   { constTok Tok_Lambda     }
 
 -- Integer literals
       $digit+     @int_suffix? { stringTok Tok_IntLit }
@@ -256,12 +297,50 @@ data Token
     | Tok_RBracket
     | Tok_LBrace
     | Tok_RBrace
+    | Tok_Colon
     | Tok_Semi
     | Tok_Comma
     | Tok_Dot
 
     -- Operators
-    | Tok_Assign
+    | Tok_Plus      
+    | Tok_Minus     
+    | Tok_Star      
+    | Tok_Slash     
+    | Tok_Percent   
+    | Tok_Amp       
+    | Tok_Pipe      
+    | Tok_Caret     
+    | Tok_Not       
+    | Tok_Tilde     
+    | Tok_Assign    
+    | Tok_Question  
+    | Tok_Coalesce  
+    | Tok_NameQual  
+    | Tok_Inc       
+    | Tok_Dec       
+    | Tok_And       
+    | Tok_Or        
+    | Tok_Arrow     
+    | Tok_Eq        
+    | Tok_NotEq     
+    | Tok_Lt        
+    | Tok_LtEq      
+    | Tok_Gt        
+    | Tok_GtEq      
+    | Tok_ShiftL    
+    | Tok_ShiftR    
+    | Tok_AssPlus   
+    | Tok_AssMinus  
+    | Tok_AssStar   
+    | Tok_AssSlash  
+    | Tok_AssPercent
+    | Tok_AssAmp    
+    | Tok_AssPipe   
+    | Tok_AssCaret  
+    | Tok_AssShiftL 
+    | Tok_AssShiftR 
+    | Tok_Lambda    
 
     -- Identifiers
     | Tok_Ident String
