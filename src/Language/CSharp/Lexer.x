@@ -15,11 +15,22 @@ import           Numeric
 -- from the Unicode classes Lu, Ll, Lt, Lm, Lo or Nl. Identifiers must
 -- start with a letter or an underscore, but can then also contain
 -- characters from the classes Mn, Mc, Nd, Pc or Cf.
-$ident_start = [a-zA-Z_]
+$ident_start = [a-zA-Z_\@]
 $ident_part  = [a-zA-Z_0-9]
 
-$digit    = [0-9]
-$hexdigit = [0-9a-fA-F]
+$digit     = [0-9]
+$hex_digit = [0-9a-fA-F]
+$sign      = [\+\-]
+
+@int_suffix  = [uU][lL]? | [lL][uU]?
+@real_suffix = [fFdDmM]
+@exponent    = [eE] $sign? $digit+
+
+$single_character = [^\r\n\'\\]
+@simple_escape    = \\ [\'\"\0\a\b\f\n\r\t\v\\]
+@hex_escape       = \\x $hex_digit{1,4}
+@unicode_escape   = \\u $hex_digit{4} | \\U $hex_digit{8}
+@character        = $single_character | @simple_escape | @hex_escape | @unicode_escape
 
 @newline = [\n\r] | \r\n
 @any     = . | @newline
@@ -28,116 +39,124 @@ $hexdigit = [0-9a-fA-F]
 
 tokens :-
 
-  $white+  ;
-  @comment ;
+$white+  ;
+@comment ;
 
-  -- Keywords
-  abstract   { constTok KW_Abstract   }
-  as         { constTok KW_As         }
-  base       { constTok KW_Base       }
-  bool       { constTok KW_Bool       }
-  break      { constTok KW_Break      }
-  byte       { constTok KW_Byte       }
-  case       { constTok KW_Case       }
-  catch      { constTok KW_Catch      }
-  char       { constTok KW_Char       }
-  checked    { constTok KW_Checked    }
-  class      { constTok KW_Class      }
-  const      { constTok KW_Const      }
-  continue   { constTok KW_Continue   }
-  decimal    { constTok KW_Decimal    }
-  default    { constTok KW_Default    }
-  delegate   { constTok KW_Delegate   }
-  do         { constTok KW_Do         }
-  double     { constTok KW_Double     }
-  else       { constTok KW_Else       }
-  enum       { constTok KW_Enum       }
-  event      { constTok KW_Event      }
-  explicit   { constTok KW_Explicit   }
-  extern     { constTok KW_Extern     }
-  false      { constTok KW_False      }
-  finally    { constTok KW_Finally    }
-  fixed      { constTok KW_Fixed      }
-  float      { constTok KW_Float      }
-  for        { constTok KW_For        }
-  foreach    { constTok KW_Foreach    }
-  goto       { constTok KW_Goto       }
-  if         { constTok KW_If         }
-  implicit   { constTok KW_Implicit   }
-  in         { constTok KW_In         }
-  int        { constTok KW_Int        }
-  interface  { constTok KW_Interface  }
-  internal   { constTok KW_Internal   }
-  is         { constTok KW_Is         }
-  lock       { constTok KW_Lock       }
-  long       { constTok KW_Long       }
-  namespace  { constTok KW_Namespace  }
-  new        { constTok KW_New        }
-  null       { constTok KW_Null       }
-  object     { constTok KW_Object     }
-  operator   { constTok KW_Operator   }
-  out        { constTok KW_Out        }
-  override   { constTok KW_Override   }
-  params     { constTok KW_Params     }
-  private    { constTok KW_Private    }
-  protected  { constTok KW_Protected  }
-  public     { constTok KW_Public     }
-  readonly   { constTok KW_Readonly   }
-  ref        { constTok KW_Ref        }
-  return     { constTok KW_Return     }
-  sbyte      { constTok KW_Sbyte      }
-  sealed     { constTok KW_Sealed     }
-  short      { constTok KW_Short      }
-  sizeof     { constTok KW_Sizeof     }
-  stackalloc { constTok KW_Stackalloc }
-  static     { constTok KW_Static     }
-  string     { constTok KW_String     }
-  struct     { constTok KW_Struct     }
-  switch     { constTok KW_Switch     }
-  this       { constTok KW_This       }
-  throw      { constTok KW_Throw      }
-  true       { constTok KW_True       }
-  try        { constTok KW_Try        }
-  typeof     { constTok KW_Typeof     }
-  uint       { constTok KW_Uint       }
-  ulong      { constTok KW_Ulong      }
-  unchecked  { constTok KW_Unchecked  }
-  unsafe     { constTok KW_Unsafe     }
-  ushort     { constTok KW_Ushort     }
-  using      { constTok KW_Using      }
-  virtual    { constTok KW_Virtual    }
-  void       { constTok KW_Void       }
-  volatile   { constTok KW_Volatile   }
-  while      { constTok KW_While      }
+-- Keywords
+abstract   { constTok Tok_Abstract   }
+as         { constTok Tok_As         }
+base       { constTok Tok_Base       }
+bool       { constTok Tok_Bool       }
+break      { constTok Tok_Break      }
+byte       { constTok Tok_Byte       }
+case       { constTok Tok_Case       }
+catch      { constTok Tok_Catch      }
+char       { constTok Tok_Char       }
+checked    { constTok Tok_Checked    }
+class      { constTok Tok_Class      }
+const      { constTok Tok_Const      }
+continue   { constTok Tok_Continue   }
+decimal    { constTok Tok_Decimal    }
+default    { constTok Tok_Default    }
+delegate   { constTok Tok_Delegate   }
+do         { constTok Tok_Do         }
+double     { constTok Tok_Double     }
+else       { constTok Tok_Else       }
+enum       { constTok Tok_Enum       }
+event      { constTok Tok_Event      }
+explicit   { constTok Tok_Explicit   }
+extern     { constTok Tok_Extern     }
+false      { constTok Tok_False      }
+finally    { constTok Tok_Finally    }
+fixed      { constTok Tok_Fixed      }
+float      { constTok Tok_Float      }
+for        { constTok Tok_For        }
+foreach    { constTok Tok_Foreach    }
+goto       { constTok Tok_Goto       }
+if         { constTok Tok_If         }
+implicit   { constTok Tok_Implicit   }
+in         { constTok Tok_In         }
+int        { constTok Tok_Int        }
+interface  { constTok Tok_Interface  }
+internal   { constTok Tok_Internal   }
+is         { constTok Tok_Is         }
+lock       { constTok Tok_Lock       }
+long       { constTok Tok_Long       }
+namespace  { constTok Tok_Namespace  }
+new        { constTok Tok_New        }
+null       { constTok Tok_Null       }
+object     { constTok Tok_Object     }
+operator   { constTok Tok_Operator   }
+out        { constTok Tok_Out        }
+override   { constTok Tok_Override   }
+params     { constTok Tok_Params     }
+private    { constTok Tok_Private    }
+protected  { constTok Tok_Protected  }
+public     { constTok Tok_Public     }
+readonly   { constTok Tok_Readonly   }
+ref        { constTok Tok_Ref        }
+return     { constTok Tok_Return     }
+sbyte      { constTok Tok_Sbyte      }
+sealed     { constTok Tok_Sealed     }
+short      { constTok Tok_Short      }
+sizeof     { constTok Tok_Sizeof     }
+stackalloc { constTok Tok_Stackalloc }
+static     { constTok Tok_Static     }
+string     { constTok Tok_String     }
+struct     { constTok Tok_Struct     }
+switch     { constTok Tok_Switch     }
+this       { constTok Tok_This       }
+throw      { constTok Tok_Throw      }
+true       { constTok Tok_True       }
+try        { constTok Tok_Try        }
+typeof     { constTok Tok_Typeof     }
+uint       { constTok Tok_Uint       }
+ulong      { constTok Tok_Ulong      }
+unchecked  { constTok Tok_Unchecked  }
+unsafe     { constTok Tok_Unsafe     }
+ushort     { constTok Tok_Ushort     }
+using      { constTok Tok_Using      }
+virtual    { constTok Tok_Virtual    }
+void       { constTok Tok_Void       }
+volatile   { constTok Tok_Volatile   }
+while      { constTok Tok_While      }
 
-  \( { constTok OpenParen    }
-  \) { constTok CloseParen   }
-  \[ { constTok OpenBracket  }
-  \] { constTok CloseBracket }
-  \{ { constTok OpenBrace    }
-  \} { constTok CloseBrace   }
-  \; { constTok Semi         }
-  \, { constTok Comma        }
-  \. { constTok Dot          }
+-- Punctuators
+\( { constTok Tok_LParen   }
+\) { constTok Tok_RParen   }
+\[ { constTok Tok_LBracket }
+\] { constTok Tok_RBracket }
+\{ { constTok Tok_LBrace   }
+\} { constTok Tok_RBrace   }
+\; { constTok Tok_Semi     }
+\, { constTok Tok_Comma    }
+\. { constTok Tok_Dot      }
 
-  $ident_start $ident_part* { wrap (IdentTok . L.unpack) }
+-- Operators
+\= { constTok Tok_Assign }
+
+-- Integer literals
+      $digit+     @int_suffix? { stringTok Tok_IntLit }
+0[xX] $hex_digit+ @int_suffix? { stringTok Tok_IntLit }
+
+-- Real literals
+$digit+ \. $digit+ @exponent? @real_suffix? { stringTok Tok_RealLit }
+        \. $digit+ @exponent? @real_suffix? { stringTok Tok_RealLit }
+           $digit+ @exponent  @real_suffix? { stringTok Tok_RealLit }
+           $digit+            @real_suffix  { stringTok Tok_RealLit }
+
+-- Character literals
+\' @character \' { stringTok Tok_CharLit }
+
+-- Identifiers
+$ident_start $ident_part* { stringTok Tok_Ident }
 {
 
 wrap :: (str -> tok) -> AlexPosn -> str -> L tok
 wrap f (AlexPn _ line col) s = L (line, col) (f s)
 
 constTok = wrap . const
-
---parseDec = wrap $ parse Int (readSigned readDec) "parseDec"
---
---parse :: (a -> Token) -> ReadS a -> String -> L.ByteString -> Token
---parse mkTok read name s =
---    maybe (Error $ name ++ ": failed") mkTok (tryRead read s)
---
---tryRead :: ReadS a -> L.ByteString -> Maybe a
---tryRead f s = case f (L.unpack s) of
---    [(a, "")] -> Just a
---    _         -> Nothing
+stringTok f = wrap (f . L.unpack)
 
 data L a = L Pos a
   deriving (Show, Eq)
@@ -145,102 +164,107 @@ data L a = L Pos a
 -- (line, column)
 type Pos = (Int, Int)
 
-pos :: AlexPosn -> Pos
-pos (AlexPn _ l c) = (l,c)
-
 data Token
     -- Keywords
-    = KW_Abstract
-    | KW_As
-    | KW_Base
-    | KW_Bool
-    | KW_Break
-    | KW_Byte
-    | KW_Case
-    | KW_Catch
-    | KW_Char
-    | KW_Checked
-    | KW_Class
-    | KW_Const
-    | KW_Continue
-    | KW_Decimal
-    | KW_Default
-    | KW_Delegate
-    | KW_Do
-    | KW_Double
-    | KW_Else
-    | KW_Enum
-    | KW_Event
-    | KW_Explicit
-    | KW_Extern
-    | KW_False
-    | KW_Finally
-    | KW_Fixed
-    | KW_Float
-    | KW_For
-    | KW_Foreach
-    | KW_Goto
-    | KW_If
-    | KW_Implicit
-    | KW_In
-    | KW_Int
-    | KW_Interface
-    | KW_Internal
-    | KW_Is
-    | KW_Lock
-    | KW_Long
-    | KW_Namespace
-    | KW_New
-    | KW_Null
-    | KW_Object
-    | KW_Operator
-    | KW_Out
-    | KW_Override
-    | KW_Params
-    | KW_Private
-    | KW_Protected
-    | KW_Public
-    | KW_Readonly
-    | KW_Ref
-    | KW_Return
-    | KW_Sbyte
-    | KW_Sealed
-    | KW_Short
-    | KW_Sizeof
-    | KW_Stackalloc
-    | KW_Static
-    | KW_String
-    | KW_Struct
-    | KW_Switch
-    | KW_This
-    | KW_Throw
-    | KW_True
-    | KW_Try
-    | KW_Typeof
-    | KW_Uint
-    | KW_Ulong
-    | KW_Unchecked
-    | KW_Unsafe
-    | KW_Ushort
-    | KW_Using
-    | KW_Virtual
-    | KW_Void
-    | KW_Volatile
-    | KW_While
+    = Tok_Abstract
+    | Tok_As
+    | Tok_Base
+    | Tok_Bool
+    | Tok_Break
+    | Tok_Byte
+    | Tok_Case
+    | Tok_Catch
+    | Tok_Char
+    | Tok_Checked
+    | Tok_Class
+    | Tok_Const
+    | Tok_Continue
+    | Tok_Decimal
+    | Tok_Default
+    | Tok_Delegate
+    | Tok_Do
+    | Tok_Double
+    | Tok_Else
+    | Tok_Enum
+    | Tok_Event
+    | Tok_Explicit
+    | Tok_Extern
+    | Tok_False
+    | Tok_Finally
+    | Tok_Fixed
+    | Tok_Float
+    | Tok_For
+    | Tok_Foreach
+    | Tok_Goto
+    | Tok_If
+    | Tok_Implicit
+    | Tok_In
+    | Tok_Int
+    | Tok_Interface
+    | Tok_Internal
+    | Tok_Is
+    | Tok_Lock
+    | Tok_Long
+    | Tok_Namespace
+    | Tok_New
+    | Tok_Null
+    | Tok_Object
+    | Tok_Operator
+    | Tok_Out
+    | Tok_Override
+    | Tok_Params
+    | Tok_Private
+    | Tok_Protected
+    | Tok_Public
+    | Tok_Readonly
+    | Tok_Ref
+    | Tok_Return
+    | Tok_Sbyte
+    | Tok_Sealed
+    | Tok_Short
+    | Tok_Sizeof
+    | Tok_Stackalloc
+    | Tok_Static
+    | Tok_String
+    | Tok_Struct
+    | Tok_Switch
+    | Tok_This
+    | Tok_Throw
+    | Tok_True
+    | Tok_Try
+    | Tok_Typeof
+    | Tok_Uint
+    | Tok_Ulong
+    | Tok_Unchecked
+    | Tok_Unsafe
+    | Tok_Ushort
+    | Tok_Using
+    | Tok_Virtual
+    | Tok_Void
+    | Tok_Volatile
+    | Tok_While
 
     -- Punctuators
-    | OpenParen
-    | CloseParen
-    | OpenBracket
-    | CloseBracket
-    | OpenBrace
-    | CloseBrace
-    | Semi
-    | Comma
-    | Dot
+    | Tok_LParen
+    | Tok_RParen
+    | Tok_LBracket
+    | Tok_RBracket
+    | Tok_LBrace
+    | Tok_RBrace
+    | Tok_Semi
+    | Tok_Comma
+    | Tok_Dot
+
+    -- Operators
+    | Tok_Assign
 
     -- Identifiers
-    | IdentTok String
+    | Tok_Ident String
+
+    -- Literals
+    | Tok_IntLit String
+    | Tok_RealLit String
+    | Tok_CharLit String
 
   deriving (Eq, Show)
 
