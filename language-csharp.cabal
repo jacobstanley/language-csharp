@@ -1,19 +1,33 @@
-Name:                language-csharp
-Version:             0.1
-Synopsis:            C# source code analysis.
-Description:         C# source code analysis.
-Homepage:            http://github.com/jystic/language-csharp
-License:             BSD3
-License-file:        LICENSE
-Author:              Jacob Stanley
-Maintainer:          Jacob Stanley <jacob@stanley.io>
-Category:            Language
-Build-type:          Simple
-Cabal-version:       >=1.6
+name:                language-csharp
+version:             0.1
+synopsis:            C# source code analysis.
+description:         C# source code analysis.
+homepage:            http://github.com/jystic/language-csharp
+license:             BSD3
+license-file:        LICENSE
+author:              Jacob Stanley
+maintainer:          Jacob Stanley <jacob@stanley.io>
+category:            Language
+build-type:          Simple
+cabal-version:       >=1.6
 
-Extra-source-files:
+extra-source-files:
+  src/Language/CSharp/Lexer.x
 
-Executable language-csharp
-  Main-is: Main
-  Build-depends:
-    base == 4.*
+executable language-csharp
+  hs-source-dirs: src
+  main-is: Main.hs
+  build-tools: alex
+
+  build-depends:
+    base == 4.*,
+    process,
+    filepath,
+    pretty,
+    parsec == 3.*,
+    bytestring == 0.9.*,
+    mtl == 2.0.*,
+    array == 0.3.*
+
+  other-modules:
+    Language.CSharp.Lexer
