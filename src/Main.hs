@@ -11,15 +11,14 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Encoding.Error as T
-import           Language.CSharp.Parser
-import           Language.CSharp.Lexer
-import           Language.CSharp.Pretty
 import           System.Directory
 import           System.Environment
 import           System.FilePath
 import           System.Process
 
-import           Debug.Trace (trace)
+import           Language.CSharp.Lexer
+import           Language.CSharp.Parser
+import           Language.CSharp.Pretty
 
 main :: IO ()
 main = do
@@ -60,15 +59,25 @@ analyzeFile :: FilePath -> IO Int
 analyzeFile path = {-# SCC "analyze" #-} do
     bs <- B.readFile path
 
-    let enc = {-# SCC "detect" #-} detect bs
-        cs  = {-# SCC "decode" #-} decode' enc bs
-        ts  = {-# SCC "lexer" #-} lexer path cs
+    let encoding = {-# SCC "detect" #-} detect bs
+        text     = {-# SCC "decode" #-} decode' encoding bs
+        tokens   = {-# SCC "lexer"  #-} lexer path text
+
+    case {-# SCC "parse"  #-} parseCSharp path tokens of
+        Left err -> error (show err)
+        Right xs -> writeFile path' $ render' xs ++ "\n"
+
+    putStrLn $ "diff -s " ++ file ++ " " ++ file'
+    pid <- runCommand $ "diff -s " ++ path ++ " " ++ path'
+    waitForProcess pid
 
     --putStrLn $ file ++ ": " ++ show (length ts) ++ " tokens (" ++ enc ++ ")"
 
-    return (length ts)
+    return (length tokens)
   where
-    file = takeFileName path
+    file  = takeFileName path
+    path' = replaceExtension path ".pretty.cs"
+    file' = takeFileName path'
 
     detect bs = case detectEncoding bs of
         Nothing -> error $ file ++ ": could not detect encoding"

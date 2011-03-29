@@ -1,14 +1,20 @@
 module Language.CSharp.Tokens
     ( L (..)
-    , Pos (..)
+    , Pos
     , Token (..)
     ) where
+
+------------------------------------------------------------------------
+-- Position info
 
 data L a = L Pos a
   deriving (Show, Eq)
 
 -- (line, column)
 type Pos = (Int, Int)
+
+------------------------------------------------------------------------
+-- Tokens
 
 data Token
     -- Keywords

@@ -1,7 +1,8 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
 module Language.CSharp.Parser
-    ( compilationUnit
+    ( parseCSharp
+    , CompilationUnit (..)
     ) where
 
 import           Control.Applicative hiding (many, (<|>))
@@ -9,10 +10,12 @@ import           Data.ByteString (ByteString)
 import           Prelude hiding ((>>), (>>=))
 import qualified Prelude as P ((>>), (>>=))
 import           Text.Parsec
-import           Text.Parsec.ByteString
+import           Text.Parsec.String (GenParser)
+import           Text.Parsec.Pos
+import qualified Text.Parsec as Parsec
 
 import           Language.CSharp.Syntax
-import           Language.CSharp.Token
+import           Language.CSharp.Tokens
 
 -- A trick to allow >> and >>=, normally infixr 1, to be
 -- used inside branches of <|>, which is declared as infixl 1.
@@ -24,14 +27,17 @@ infixr 2 >>, >>=
 ------------------------------------------------------------------------
 -- Top level
 
-type P = GenParser ByteString ()
+type P = GenParser (L Token) ()
+
+parseCSharp :: SourceName -> [L Token] -> Either ParseError CompilationUnit
+parseCSharp name toks = runParser compilationUnit () name toks
 
 compilationUnit :: P CompilationUnit
 compilationUnit = CompilationUnit <$> many namespace
 
 namespace :: P Namespace
 namespace = do
-    reserved "namespace"
+    tok Tok_Namespace
     Namespace <$> name
               <*> braces (many typeDecl)
 
@@ -43,7 +49,7 @@ typeDecl = withModifiers class_ <?> "type declaration"
 
 class_ :: [Modifier] -> P TypeDecl
 class_ ms = do
-    reserved "class"
+    tok Tok_Class
     Class <$> return ms
           <*> ident
           <*> braces (many member)
@@ -68,7 +74,7 @@ varDecl = VarDecl <$> ident
                   <*> optionMaybe varInit
 
 varInit :: P VarInit
-varInit = reservedOp "=" >> InitExp <$> expression
+varInit = tok Tok_Assign >> InitExp <$> expression
 
 ------------------------------------------------------------------------
 -- Statements
@@ -89,9 +95,12 @@ expression :: P Exp
 expression = Lit <$> literal
 
 literal :: P Literal
-literal = reserved "true" >> return (Bool True)
-      <|> reserved "false" >> return (Bool False)
-      <|> Int <$> natural
+literal = maybeToken $ \t -> case t of
+    Tok_Null     -> Just Null
+    Tok_True     -> Just (Bool True)
+    Tok_False    -> Just (Bool False)
+    Tok_IntLit i -> Just (Int i)
+    _            -> Nothing
 
 ------------------------------------------------------------------------
 -- Formal Parameters
@@ -111,21 +120,21 @@ withModifiers :: ([Modifier] -> P a) -> P a
 withModifiers p = many modifier >>= p
 
 modifier :: P Modifier
-modifier = reserved "new"       >> return New
-       <|> reserved "public"    >> return Public
-       <|> reserved "protected" >> return Protected
-       <|> reserved "internal"  >> return Internal
-       <|> reserved "private"   >> return Private
-       <|> reserved "abstract"  >> return Abstract
-       <|> reserved "sealed"    >> return Sealed
-       <|> reserved "static"    >> return Static
-       <|> reserved "unsafe"    >> return Unsafe
+modifier = tok Tok_New       >> return New
+       <|> tok Tok_Public    >> return Public
+       <|> tok Tok_Protected >> return Protected
+       <|> tok Tok_Internal  >> return Internal
+       <|> tok Tok_Private   >> return Private
+       <|> tok Tok_Abstract  >> return Abstract
+       <|> tok Tok_Sealed    >> return Sealed
+       <|> tok Tok_Static    >> return Static
+       <|> tok Tok_Unsafe    >> return Unsafe
        <?> "modifier (e.g. public)"
 
 paramModifier :: P ParamModifier
-paramModifier = reserved "ref"  >> return Ref
-            <|> reserved "out"  >> return Out
-            <|> reserved "this" >> return This
+paramModifier = tok Tok_Ref  >> return Ref
+            <|> tok Tok_Out  >> return Out
+            <|> tok Tok_This >> return This
 
 ------------------------------------------------------------------------
 -- Types
@@ -134,23 +143,23 @@ type_ :: P Type
 type_ = SimpleType <$> simpleType
 
 returnType :: P (Maybe Type)
-returnType = reserved "void" >> return Nothing
+returnType = tok Tok_Void >> return Nothing
          <|> Just <$> type_
          <?> "return type"
 
 simpleType :: P SimpleType
-simpleType = reserved "bool"    >> return BoolT
-         <|> reserved "sbyte"   >> return SByteT
-         <|> reserved "short"   >> return ShortT
-         <|> reserved "ushort"  >> return UShortT
-         <|> reserved "int"     >> return IntT
-         <|> reserved "uint"    >> return UIntT
-         <|> reserved "long"    >> return LongT
-         <|> reserved "ulong"   >> return ULongT
-         <|> reserved "char"    >> return CharT
-         <|> reserved "float"   >> return FloatT
-         <|> reserved "double"  >> return DoubleT
-         <|> reserved "decimal" >> return DecimalT
+simpleType = tok Tok_Bool    >> return BoolT
+         <|> tok Tok_Sbyte   >> return SByteT
+         <|> tok Tok_Short   >> return ShortT
+         <|> tok Tok_Ushort  >> return UShortT
+         <|> tok Tok_Int     >> return IntT
+         <|> tok Tok_Uint    >> return UIntT
+         <|> tok Tok_Long    >> return LongT
+         <|> tok Tok_Ulong   >> return ULongT
+         <|> tok Tok_Char    >> return CharT
+         <|> tok Tok_Float   >> return FloatT
+         <|> tok Tok_Double  >> return DoubleT
+         <|> tok Tok_Decimal >> return DecimalT
 
 ------------------------------------------------------------------------
 -- Names and identifiers
@@ -159,4 +168,39 @@ name :: P Name
 name = Name <$> dotSep1 ident
 
 ident :: P Ident
-ident = Ident <$> identifier
+ident = maybeToken $ \t -> case t of
+    Tok_Ident i -> Just (Ident i)
+    _           -> Nothing
+
+------------------------------------------------------------------------
+-- Punctuation
+
+braces, parens :: P a -> P a
+braces = between (tok Tok_LBrace) (tok Tok_RBrace)
+parens = between (tok Tok_LParen) (tok Tok_RParen)
+
+semi, comma, dot :: P ()
+semi  = tok Tok_Semi
+comma = tok Tok_Comma
+dot   = tok Tok_Dot
+
+commaSep :: P a -> P [a]
+commaSep p = p `sepBy` comma
+
+dotSep1 :: P a -> P [a]
+dotSep1 p = p `sepBy1` dot
+
+------------------------------------------------------------------------
+-- Token parsing
+
+maybeToken :: (Token -> Maybe a) -> P a
+maybeToken test = token showT posT testT
+  where showT (L _ t) = show t
+        posT  (L p _) = pos2sourcePos p
+        testT (L _ t) = test t
+
+tok :: Token -> P ()
+tok t = maybeToken $ \r -> if r == t then Just () else Nothing
+
+pos2sourcePos :: Pos -> SourcePos
+pos2sourcePos (l, c) = newPos "" l c

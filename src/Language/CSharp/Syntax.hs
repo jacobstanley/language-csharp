@@ -40,8 +40,9 @@ data Exp = Lit Literal
     deriving (Eq, Show)
 
 data Literal
-    = Bool Bool
-    | Int Integer
+    = Null
+    | Bool Bool
+    | Int String
     deriving (Eq, Show)
 
 ------------------------------------------------------------------------

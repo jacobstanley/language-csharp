@@ -68,9 +68,10 @@ instance Pretty Exp where
     pretty (Lit lit) = pretty lit
 
 instance Pretty Literal where
+    pretty (Null)       = text "null"
     pretty (Bool True)  = text "true"
     pretty (Bool False) = text "false"
-    pretty (Int n)      = integer n
+    pretty (Int n)      = text n
 
 ------------------------------------------------------------------------
 -- Types
