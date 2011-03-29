@@ -42,18 +42,12 @@ $sign      = [\+\-]
 @string_character   = [^\"\\] | @escapes
 @verbatim_character = $any # \" | \"\"
 
--- Not sure how to deal with these yet, so we'll just ignore them
---@bom = \xEF \xBB \xBF -- UTF-8
---     | \uFEFF         -- UTF-16BE
---     | \uFFFE         -- UTF-16LE
-
 tokens :-
 
 $white+       ;
 \0+           ;
 @comment      ;
 @preprocessor ;
---@bom          ;
 
 -- Keywords
 abstract   { constTok Tok_Abstract   }
