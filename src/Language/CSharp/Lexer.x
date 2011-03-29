@@ -15,6 +15,8 @@ $any     = [.\n\r]
 @comment = "/*" $any* "*/"
          | "//" .* @newline
 
+@nul_eof = \0 $any*
+
 @preprocessor = \# .* @newline
 
 -- C# actually defines a letter to be any character (or escape sequence)
@@ -45,6 +47,7 @@ tokens :-
 
 $white+       ;
 @comment      ;
+@nul_eof      ;
 @preprocessor ;
 
 -- Keywords
@@ -227,7 +230,6 @@ alexInputPrevChar (p,c,s) = c
 
 alexGetChar :: AlexInput -> Maybe (Char,AlexInput)
 alexGetChar (p,_,cs) | T.null cs  = Nothing
-                     | alexEOF c  = Nothing
                      | alexSkip c = alexGetChar (p', c, cs')
                      | otherwise  = p' `seq` cs' `seq` Just (c, (p', c, cs'))
   where
@@ -238,10 +240,6 @@ alexGetChar (p,_,cs) | T.null cs  = Nothing
 alexSkip :: Char -> Bool
 alexSkip '\xFEFF' = True
 alexSkip _        = False
-
-alexEOF :: Char -> Bool
-alexEOF '\0' = True
-alexEOF _    = False
 
 -----------------------------------------------------------
 
