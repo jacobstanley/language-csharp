@@ -50,6 +50,7 @@ $sign      = [\+\-]
 tokens :-
 
 $white+       ;
+\0+           ;
 @comment      ;
 @preprocessor ;
 --@bom          ;
