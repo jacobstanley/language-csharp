@@ -20,15 +20,15 @@ executable language-csharp
   build-tools: alex
 
   build-depends:
+    array == 0.3.*,
     base == 4.*,
-    process,
-    filepath,
-    pretty,
-    parsec == 3.*,
     bytestring == 0.9.*,
-    text,
+    filepath,
     mtl == 2.0.*,
-    array == 0.3.*
+    parsec == 3.*,
+    pretty,
+    process,
+    text
 
   other-modules:
     Language.CSharp.Lexer
