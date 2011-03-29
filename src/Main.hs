@@ -3,31 +3,31 @@
 
 module Main (main) where
 
-import           Codec.Text.Detect
+import           Control.Concurrent
+import           Codec.Text.Detect (detectEncodingName)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Text.Encoding as T
-import           Language.CSharp.Lexer
+import qualified Data.Text.Encoding.Error as T
 import           Language.CSharp.Parser
+import           Language.CSharp.Lexer
 import           Language.CSharp.Pretty
+import           System.Directory
 import           System.Environment
 import           System.FilePath
 import           System.Process
 
-import Debug.Trace (trace)
+import           Debug.Trace (trace)
 
 main :: IO ()
 main = do
     args <- getArgs
+    fs <- getFiles (if null args then "." else head args)
 
-    let input = if length args == 0 then "test/Test2.cs" else head args
-        --output = replaceExtension input ".pretty.cs"
-
-    bs <- B.readFile input
-    let n = length (lexer input $ decode input bs)
-    putStrLn $ input ++ ": " ++ show n ++ " tokens"
+    ts <- forkJoin analyzeFile fs
+    putStrLn $ "Lexed " ++ show (sum ts) ++ " tokens"
 
     --result <- parseFromFile compilationUnit input
     --case result of
@@ -37,18 +37,73 @@ main = do
     --pid <- runCommand $ "diff -s " ++ input ++ " " ++ output
     --waitForProcess pid
 
-    return ()
-
-decode :: String -> B.ByteString -> T.Text
-decode file bs = go enc
+getFiles :: FilePath -> IO [FilePath]
+getFiles path | csharp    = return [path]
+              | otherwise = do
+    isDir <- doesDirectoryExist path
+    if not isDir
+      then return []
+      else do
+        fs <- getDirectoryContents path
+        fs' <- mapM getFiles (map prefix $ filter isReal fs)
+        return (concat fs')
   where
-    enc = detectEncodingName (L.fromChunks [bs])
+    csharp = takeExtension path == ".cs"
+    prefix = (path </>)
 
-    go (Just "ASCII")    = T.decodeASCII bs
-    go (Just "UTF-8")    = T.decodeUtf8    (B.drop 3 bs)
-    go (Just "UTF-16LE") = T.decodeUtf16LE (B.drop 2 bs)
-    go (Just "UTF-16BE") = T.decodeUtf16BE (B.drop 2 bs)
-    go (Just "UTF-32LE") = T.decodeUtf32LE (B.drop 4 bs)
-    go (Just "UTF-32BE") = T.decodeUtf32BE (B.drop 4 bs)
-    go (Just x)          = error $ file ++ ": unsupported encoding: " ++ x
-    go Nothing           = error $ file ++ ": could not detect encoding"
+    isReal "."  = False
+    isReal ".." = False
+    isReal _    = True
+
+analyzeFile :: FilePath -> IO Int
+analyzeFile path = do
+    bs <- B.readFile path
+
+    let enc = detect bs
+        cs  = decode' enc bs
+        ts  = lexer path cs
+
+    --putStrLn $ file ++ ": " ++ show (length ts) ++ " tokens (" ++ enc ++ ")"
+
+    return (length ts)
+  where
+    file = takeFileName path
+
+    detect bs = case detectEncoding bs of
+        Nothing -> error $ file ++ ": could not detect encoding"
+        Just x  -> x
+
+    decode' enc bs = case decode enc bs of
+        Nothing -> error $ file ++ ": " ++ enc ++ " is not a supported encoding"
+        Just x  -> x
+
+
+detectEncoding :: B.ByteString -> Maybe String
+detectEncoding bs = detectEncodingName $ L.fromChunks [bs]
+
+decode :: String -> B.ByteString -> Maybe T.Text
+decode "UTF-8"        = Just . T.decodeUtf8With T.lenientDecode
+decode "UTF-16LE"     = Just . T.decodeUtf16LE
+decode "UTF-16BE"     = Just . T.decodeUtf16BE
+decode "UTF-32LE"     = Just . T.decodeUtf32LE
+decode "UTF-32BE"     = Just . T.decodeUtf32BE
+decode "ASCII"        = Just . T.decodeASCII
+decode "windows-1252" = Just . T.decodeASCII
+decode _              = const Nothing
+
+------------------------------------------------------------------------
+
+forkJoin :: (a -> IO b) -> [a] -> IO [b]
+forkJoin f xs = (fork f xs) >>= join
+
+join :: [MVar b] -> IO [b]
+join = mapM takeMVar
+
+fork :: (a -> IO b) -> [a] -> IO [MVar b]
+fork f = mapM (fork1 f)
+
+fork1 :: (a -> IO b) -> a -> IO (MVar b)
+fork1 f x = do
+    cell <- newEmptyMVar
+    forkIO $ do { result <- f x; putMVar cell $! result }
+    return cell
