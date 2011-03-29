@@ -5,11 +5,11 @@ module Language.CSharp.Lexer
     , lexer
     ) where
 
-import qualified Data.ByteString.Lazy.Char8 as L
+import qualified Data.Text as T
 import           Numeric
 }
 
-%wrapper "posn-bytestring"
+--%wrapper "posn-bytestring"
 
 $any     = [.\n\r]
 @newline = [\n\r] | \r\n
@@ -42,11 +42,17 @@ $sign      = [\+\-]
 @string_character   = [^\"\\] | @escapes
 @verbatim_character = $any # \" | \"\"
 
+-- Not sure how to deal with these yet, so we'll just ignore them
+--@bom = \xEF \xBB \xBF -- UTF-8
+--     | \uFEFF         -- UTF-16BE
+--     | \uFFFE         -- UTF-16LE
+
 tokens :-
 
-$white+  ;
-@comment ;
+$white+       ;
+@comment      ;
 @preprocessor ;
+--@bom          ;
 
 -- Keywords
 abstract   { constTok Tok_Abstract   }
@@ -202,7 +208,8 @@ wrap :: (str -> tok) -> AlexPosn -> str -> L tok
 wrap f (AlexPn _ line col) s = L (line, col) (f s)
 
 constTok = wrap . const
-stringTok f = wrap (f . L.unpack)
+stringTok f = wrap (f . T.unpack)
+--stringTok f = wrap f
 
 data L a = L Pos a
   deriving (Show, Eq)
@@ -354,6 +361,47 @@ data Token
 
   deriving (Eq, Show)
 
-lexer :: L.ByteString -> [L Token]
-lexer = alexScanTokens
+--lexer :: String -> L.ByteString -> [L Token]
+lexer :: String -> T.Text -> [L Token]
+lexer file str = go (alexStartPos,'\n',str)
+  where
+    go inp@(pos,_,str) = case alexScan inp 0 of
+        AlexEOF                -> []
+        AlexError (p,_,_)      -> error (errMsg p)
+        AlexSkip  inp' len     -> go inp'
+        AlexToken inp' len act -> act pos (T.take (fromIntegral len) str) : go inp'
+        --AlexToken inp' len act -> act pos (take len str) : go inp'
+
+    errMsg (AlexPn _ l c) = file ++ ": lexical error (line " ++ show l ++ ", col " ++ show c ++ ")  "
+                         ++ "start: " ++ show (T.unpack $ T.take 4 str)
+
+-----------------------------------------------------------
+
+type AlexInput = (AlexPosn,     -- current position,
+                  Char,         -- previous char
+                  T.Text)       -- current input string
+
+alexInputPrevChar :: AlexInput -> Char
+alexInputPrevChar (p,c,s) = c
+
+alexGetChar :: AlexInput -> Maybe (Char,AlexInput)
+alexGetChar (p,_,cs) | T.null cs = Nothing
+                     | otherwise = let c   = T.head cs
+                                       cs' = T.tail cs
+                                       p'  = alexMove p c
+                                    in p' `seq` cs' `seq` Just (c, (p', c, cs'))
+
+-----------------------------------------------------------
+
+data AlexPosn = AlexPn !Int !Int !Int
+        deriving (Eq,Show)
+
+alexStartPos :: AlexPosn
+alexStartPos = AlexPn 0 1 1
+
+alexMove :: AlexPosn -> Char -> AlexPosn
+alexMove (AlexPn a l c) '\t' = AlexPn (a+1)  l     (((c+7) `div` 8)*8+1)
+alexMove (AlexPn a l c) '\n' = AlexPn (a+1) (l+1)   1
+alexMove (AlexPn a l c) _    = AlexPn (a+1)  l     (c+1)
+
 }

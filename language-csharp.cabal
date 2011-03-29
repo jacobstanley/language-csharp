@@ -26,6 +26,7 @@ executable language-csharp
     pretty,
     parsec == 3.*,
     bytestring == 0.9.*,
+    text,
     mtl == 2.0.*,
     array == 0.3.*
 
