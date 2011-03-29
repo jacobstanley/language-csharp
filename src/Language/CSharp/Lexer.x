@@ -368,13 +368,14 @@ lexer file str = go (alexStartPos,'\n',str)
   where
     go inp@(pos,_,str) = case alexScan inp 0 of
         AlexEOF                -> []
-        AlexError (p,_,_)      -> error (errMsg p)
+        AlexError (p,_,_)      -> error (errMsg p str)
         AlexSkip  inp' len     -> go inp'
         AlexToken inp' len act -> act pos (T.take (fromIntegral len) str) : go inp'
         --AlexToken inp' len act -> act pos (take len str) : go inp'
 
-    errMsg (AlexPn _ l c) = file ++ ": lexical error (line " ++ show l ++ ", col " ++ show c ++ ")  "
-                         ++ "start: " ++ show (T.unpack $ T.take 4 str)
+    errMsg (AlexPn _ l c) str =
+        file ++ ": lexical error (line " ++ show l ++ ", col " ++ show c ++ ")\n"
+             ++ "    near " ++ show (T.unpack $ T.take 40 str)
 
 -----------------------------------------------------------
 
