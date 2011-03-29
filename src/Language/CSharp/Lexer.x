@@ -209,7 +209,7 @@ stringTok f = wrap (f . T.unpack)
 lexer :: String -> T.Text -> [L Token]
 lexer file text = go (alexStartPos, '\n', text `T.snoc` '\n')
   where
-    go inp@(pos, _, cs) = case alexScan inp 0 of
+    go inp@(pos, _, cs) = case {-# SCC "alexScan" #-} alexScan inp 0 of
         AlexEOF                -> []
         AlexError inp'         -> error (errMsg inp')
         AlexSkip  inp' len     -> go inp'
@@ -230,7 +230,7 @@ alexInputPrevChar (p,c,s) = c
 
 alexGetChar :: AlexInput -> Maybe (Char,AlexInput)
 alexGetChar (p,_,cs) | T.null cs  = Nothing
-                     | alexSkip c = alexGetChar (p', c, cs')
+                     | {-# SCC "alexSkip" #-} alexSkip c = alexGetChar (p', c, cs')
                      | otherwise  = p' `seq` cs' `seq` Just (c, (p', c, cs'))
   where
     c   = T.head cs

@@ -55,13 +55,14 @@ getFiles path | csharp    = return [path]
     isReal ".." = False
     isReal _    = True
 
+
 analyzeFile :: FilePath -> IO Int
-analyzeFile path = do
+analyzeFile path = {-# SCC "analyze" #-} do
     bs <- B.readFile path
 
-    let enc = detect bs
-        cs  = decode' enc bs
-        ts  = lexer path cs
+    let enc = {-# SCC "detect" #-} detect bs
+        cs  = {-# SCC "decode" #-} decode' enc bs
+        ts  = {-# SCC "lexer" #-} lexer path cs
 
     --putStrLn $ file ++ ": " ++ show (length ts) ++ " tokens (" ++ enc ++ ")"
 
