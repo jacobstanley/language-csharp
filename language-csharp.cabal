@@ -23,6 +23,7 @@ executable language-csharp
     array == 0.3.*,
     base == 4.*,
     bytestring == 0.9.*,
+    charsetdetect,
     filepath,
     mtl == 2.0.*,
     parsec == 3.*,

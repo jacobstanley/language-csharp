@@ -5,6 +5,7 @@ module Main (main) where
 
 import           Codec.Text.Detect
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as L
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Text.Encoding as T
@@ -25,8 +26,7 @@ main = do
         --output = replaceExtension input ".pretty.cs"
 
     bs <- B.readFile input
-    --putStr $ show $ B.unpack $ B.take 4 bs
-    let n = length (lexer input $ decode bs)
+    let n = length (lexer input $ decode input bs)
     putStrLn $ input ++ ": " ++ show n ++ " tokens"
 
     --result <- parseFromFile compilationUnit input
@@ -39,15 +39,16 @@ main = do
 
     return ()
 
-decode bs | utf8      = T.decodeUtf8    (B.drop 3 bs)
-          | utf16le   = T.decodeUtf16LE (B.drop 2 bs)
-          | utf16be   = T.decodeUtf16BE (B.drop 2 bs)
-          | utf32le   = T.decodeUtf32LE (B.drop 4 bs)
-          | utf32be   = T.decodeUtf32BE (B.drop 4 bs)
-          | otherwise = T.decodeUtf8 bs
+decode :: String -> B.ByteString -> T.Text
+decode file bs = go enc
   where
-    utf8    =     "\xEF\xBB\xBF" `B.isPrefixOf` bs
-    utf16le =         "\xFF\xFE" `B.isPrefixOf` bs
-    utf16be =         "\xFE\xFF" `B.isPrefixOf` bs
-    utf32le = "\xFF\xFE\x00\x00" `B.isPrefixOf` bs
-    utf32be = "\x00\x00\xFE\xFF" `B.isPrefixOf` bs
+    enc = detectEncodingName (L.fromChunks [bs])
+
+    go (Just "ASCII")    = T.decodeASCII bs
+    go (Just "UTF-8")    = T.decodeUtf8    (B.drop 3 bs)
+    go (Just "UTF-16LE") = T.decodeUtf16LE (B.drop 2 bs)
+    go (Just "UTF-16BE") = T.decodeUtf16BE (B.drop 2 bs)
+    go (Just "UTF-32LE") = T.decodeUtf32LE (B.drop 4 bs)
+    go (Just "UTF-32BE") = T.decodeUtf32BE (B.drop 4 bs)
+    go (Just x)          = error $ file ++ ": unsupported encoding: " ++ x
+    go Nothing           = error $ file ++ ": could not detect encoding"
