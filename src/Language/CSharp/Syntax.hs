@@ -58,8 +58,13 @@ data Literal
 data LocalType = Type Type | Var
     deriving (Eq, Show)
 
-data Type = PrimType PrimType | UserType Ident
+data Type
+    = UserType Ident
+    | PrimType PrimType
+    | ArrayType Type ArrayRank
     deriving (Eq, Show)
+
+type ArrayRank = Int
 
 data PrimType
     -- Value types

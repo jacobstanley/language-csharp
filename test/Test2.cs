@@ -29,14 +29,8 @@ namespace Language.CSharp
 
        \r\n\t\b\a\v\";
 
-            // some lambda
-            //var f = x => x + 1;
-
-            //ulong x = 100;
-            //x >>= 3;
-            //x <<= 6;
-
-            //global::System.Console.WriteLine("f\'r\"e\\d");
+            // arrays
+            int[,,][,][] xs = null; //new int[0];
         }
 #if 0
 #  error :(

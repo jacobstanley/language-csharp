@@ -149,14 +149,26 @@ localType :: P LocalType
 localType = Type <$> type_
         <|> var >> return Var
 
-type_ :: P Type
-type_ = PrimType <$> primType
-    <|> UserType <$> ident
-
 returnType :: P (Maybe Type)
 returnType = tok Tok_Void >> return Nothing
          <|> Just <$> type_
          <?> "return type"
+
+type_ :: P Type
+type_ = do
+    t <- coreType
+    rs <- many arrayRank
+    return (foldl ArrayType t rs)
+  where
+    coreType = PrimType <$> primType
+           <|> UserType <$> ident
+
+arrayRank :: P ArrayRank
+arrayRank = do
+    tok Tok_LBracket
+    dims <- many (tok Tok_Comma)
+    tok Tok_RBracket
+    return (length dims + 1)
 
 primType :: P PrimType
 primType = tok Tok_Bool    >> return BoolT

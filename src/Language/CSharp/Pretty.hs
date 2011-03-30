@@ -42,7 +42,7 @@ instance Pretty TypeDecl where
 
 instance Pretty Method where
     pretty (Method ms t n ps stmts) =
-        hcat' ms <+> pretty t <+> pretty n <> parens (hcatComma ps)
+        hcat' ms <+> pretty t <+> pretty n <> parens (params ps)
         $+$ block (vcat' stmts)
 
 instance Pretty FormalParam where
@@ -61,7 +61,7 @@ instance Pretty VarInit where
 -- Statements
 
 instance Pretty Stmt where
-    pretty (LocalVar t vds) = pretty t <+> hcatComma vds <> semi
+    pretty (LocalVar t vds) = pretty t <+> params vds <> semi
 
 ------------------------------------------------------------------------
 -- Expressions
@@ -75,9 +75,9 @@ instance Pretty Literal where
     pretty (Bool False)  = text "false"
     pretty (Int n)       = pretty n
     pretty (Real f)      = pretty f
-    pretty (Char c)      = char '\''  <> pretty c  <> char '\''
-    pretty (String cs)   = char '"'   <> pretty cs <> char '"'
-    pretty (Verbatim cs) = text "@\"" <> pretty cs <> char '"'
+    pretty (Char c)      = quotes (pretty c)
+    pretty (String cs)   = doubleQuotes (pretty cs)
+    pretty (Verbatim cs) = char '@' <> doubleQuotes (pretty cs)
 
 ------------------------------------------------------------------------
 -- Types
@@ -91,8 +91,11 @@ instance Pretty LocalType where
     pretty Var      = text "var"
 
 instance Pretty Type where
-    pretty (PrimType t) = pretty t
-    pretty (UserType t) = pretty t
+    pretty (UserType t)    = pretty t
+    pretty (PrimType t)    = pretty t
+    pretty (ArrayType t r) = pretty t <> prettyRank r
+      where
+        prettyRank r = brackets (hcatSep comma $ replicate r empty)
 
 instance Pretty PrimType where
     pretty BoolT    = text "bool"
@@ -135,7 +138,7 @@ instance Pretty ParamModifier where
 -- Names and identifiers
 
 instance Pretty Name where
-    pretty (Name is) = hcat $ punctuate (char '.') $ map pretty is
+    pretty (Name is) = hcatSep' (char '.') is
 
 instance Pretty Ident where
     pretty (Ident s) = pretty s
@@ -160,6 +163,9 @@ block x = char '{'
       $+$ nest indent x
       $+$ char '}'
 
+params :: Pretty a => [a] -> Doc
+params = hcatSep' (comma <> space)
+
 blank :: Doc
 blank = nest (-1000) (text "")
 
@@ -175,8 +181,8 @@ vcat' = vcat . map pretty
 hcat' :: Pretty a => [a] -> Doc
 hcat' = hcat . map pretty
 
-hcatComma :: Pretty a => [a] -> Doc
-hcatComma = hcatSep (comma <> space)
+hcatSep :: Doc -> [Doc] -> Doc
+hcatSep s = hcat . intersperse s
 
-hcatSep :: Pretty a => Doc -> [a] -> Doc
-hcatSep s xs = hcat $ intersperse s $ map pretty xs
+hcatSep' :: Pretty a => Doc -> [a] -> Doc
+hcatSep' s = hcatSep s . map pretty
