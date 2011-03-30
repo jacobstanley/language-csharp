@@ -31,6 +31,19 @@ namespace Language.CSharp
 
             // arrays
             int[,,][,][] xs = null; //new int[0];
+
+            // simple name
+            var f = MyFunction<A, B, C>;
+
+            // parens
+            int z = (1);
+
+            // member access
+            var x = (Simple<T>).Member<T>;
+
+            // invocation
+            Test123 z = x.Property.Invoke().MethodCall<A, B>(a, ref b, out c);
+            Lang.MyClass<int, B> x = AnotherMethod(true, 10.1m, 'x');
         }
 #if 0
 #  error :(
@@ -38,7 +51,7 @@ namespace Language.CSharp
 
         #region SomeHorribleRegion
 
-        public void AnotherMethod(bool b, decimal d, char c)
+        public Lang.MyClass<int, B> AnotherMethod(bool b, decimal d, char c)
         {
         }
 

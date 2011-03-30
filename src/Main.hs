@@ -25,7 +25,7 @@ main = do
     args <- getArgs
     fs <- getFiles (if null args then "." else head args)
 
-    ts <- forkJoin analyzeFile fs
+    ts <- mapM analyzeFile fs
     putStrLn $ "Lexed " ++ show (sum ts) ++ " tokens"
 
 getFiles :: FilePath -> IO [FilePath]

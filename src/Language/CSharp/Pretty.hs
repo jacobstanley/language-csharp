@@ -29,7 +29,7 @@ instance Pretty CompilationUnit where
 
 instance Pretty Namespace where
     pretty (Namespace n ts) =
-        text "namespace" <+> pretty n
+        text "namespace" <+> pp n
         $+$ block (vsep' ts)
 
 ------------------------------------------------------------------------
@@ -37,63 +37,78 @@ instance Pretty Namespace where
 
 instance Pretty TypeDecl where
     pretty (Class mds n ms) =
-        hcat' mds <+> text "class" <+> pretty n
+        hcat' mds <+> text "class" <+> pp n
         $+$ block (vsep' ms)
 
 instance Pretty Method where
     pretty (Method ms t n ps stmts) =
-        hcat' ms <+> pretty t <+> pretty n <> parens (params ps)
+        hcat' ms <+> pp t <+> pp n <> parens (params ps)
         $+$ block (vcat' stmts)
 
 instance Pretty FormalParam where
-    pretty (FormalParam ms t n) =
-        hcat' ms <+> pretty t <+> pretty n
+    pretty (FormalParam Nothing  t n) =          pp t <+> pp n
+    pretty (FormalParam (Just m) t n) = pp m <+> pp t <+> pp n
 
 instance Pretty VarDecl where
-    pretty (VarDecl n Nothing)  = pretty n
-    pretty (VarDecl n (Just d)) =
-        pretty n <+> equals <+> pretty d
+    pretty (VarDecl n Nothing)  = pp n
+    pretty (VarDecl n (Just d)) = pp n <+> equals <+> pp d
 
 instance Pretty VarInit where
-    pretty (InitExp exp) = pretty exp
+    pretty (InitExp exp) = pp exp
 
 ------------------------------------------------------------------------
 -- Statements
 
 instance Pretty Stmt where
-    pretty (LocalVar t vds) = pretty t <+> params vds <> semi
+    pretty (LocalVar t vds) = pp t <+> params vds <> semi
 
 ------------------------------------------------------------------------
 -- Expressions
 
 instance Pretty Exp where
-    pretty (Lit lit) = pretty lit
+    pretty (Lit lit)               = pp lit
+    pretty (SimpleName n ts)       = pp n <> pp ts
+    pretty (ParenExp exp)          = parens (pp exp)
+    pretty (MemberAccess exp n ts) = pp exp <> dot <> pp n <> pp ts
+    pretty (Invocation exp args)   = pp exp <> parens (params args)
+
+instance Pretty Arg where
+    pretty (Arg i m e) = name i <> mod m <> pp e
+      where
+        name Nothing   = empty
+        name (Just i') = pp i' <> colon <> space
+        mod Nothing    = empty
+        mod (Just m')  = pp m' <> space
 
 instance Pretty Literal where
     pretty (Null)        = text "null"
     pretty (Bool True)   = text "true"
     pretty (Bool False)  = text "false"
-    pretty (Int n)       = pretty n
-    pretty (Real f)      = pretty f
-    pretty (Char c)      = quotes (pretty c)
-    pretty (String cs)   = doubleQuotes (pretty cs)
-    pretty (Verbatim cs) = char '@' <> doubleQuotes (pretty cs)
+    pretty (Int n)       = pp n
+    pretty (Real f)      = pp f
+    pretty (Char c)      = quotes (pp c)
+    pretty (String cs)   = doubleQuotes (pp cs)
+    pretty (Verbatim cs) = char '@' <> doubleQuotes (pp cs)
 
 ------------------------------------------------------------------------
 -- Types
 
 instance Pretty (Maybe Type) where
     pretty Nothing  = text "void"
-    pretty (Just t) = pretty t
+    pretty (Just t) = pp t
 
 instance Pretty LocalType where
-    pretty (Type t) = pretty t
+    pretty (Type t) = pp t
     pretty Var      = text "var"
 
+instance Pretty [TypeArg] where
+    pretty [] = empty
+    pretty ts = angles (params ts)
+
 instance Pretty Type where
-    pretty (UserType t)    = pretty t
-    pretty (PrimType t)    = pretty t
-    pretty (ArrayType t r) = pretty t <> prettyRank r
+    pretty (UserType t ts) = pp t <> pretty ts
+    pretty (PrimType t)    = pp t
+    pretty (ArrayType t r) = pp t <> prettyRank r
       where
         prettyRank r = brackets (hcatSep comma $ replicate r empty)
 
@@ -115,7 +130,7 @@ instance Pretty PrimType where
     pretty StringT  = text "string"
     pretty DynamicT = text "dynamic"
 
-instance Pretty Modifier where
+instance Pretty Mod where
     pretty New       = text "new"
     pretty Public    = text "public"
     pretty Protected = text "protected"
@@ -129,19 +144,23 @@ instance Pretty Modifier where
     pretty Extern    = text "extern"
     pretty Unsafe    = text "unsafe"
 
-instance Pretty ParamModifier where
-    pretty Ref  = text "ref"
-    pretty Out  = text "out"
-    pretty This = text "this"
+instance Pretty ParamMod where
+    pretty RefParam  = text "ref"
+    pretty OutParam  = text "out"
+    pretty ThisParam = text "this"
+
+instance Pretty ArgMod where
+    pretty RefArg = text "ref"
+    pretty OutArg = text "out"
 
 ------------------------------------------------------------------------
 -- Names and identifiers
 
 instance Pretty Name where
-    pretty (Name is) = hcatSep' (char '.') is
+    pretty (Name is) = hcatSep' dot is
 
 instance Pretty Ident where
-    pretty (Ident s) = pretty s
+    pretty (Ident s) = pp s
 
 ------------------------------------------------------------------------
 -- ByteString / Text
@@ -165,6 +184,18 @@ block x = char '{'
 
 params :: Pretty a => [a] -> Doc
 params = hcatSep' (comma <> space)
+
+angles :: Doc -> Doc
+angles d = char '<' <> d <> char '>'
+
+dot :: Doc
+dot = char '.'
+
+------------------------------------------------------------------------
+
+-- | Shorthand for writing pretty
+pp :: Pretty a => a -> Doc
+pp = pretty
 
 blank :: Doc
 blank = nest (-1000) (text "")

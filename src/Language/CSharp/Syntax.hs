@@ -15,13 +15,13 @@ data Namespace = Namespace Name [TypeDecl]
 ------------------------------------------------------------------------
 -- Declarations
 
-data TypeDecl = Class [Modifier] Ident [Method]
+data TypeDecl = Class [Mod] Ident [Method]
     deriving (Eq, Show)
 
-data Method = Method [Modifier] (Maybe Type) Ident [FormalParam] [Stmt]
+data Method = Method [Mod] (Maybe Type) Ident [FormalParam] [Stmt]
     deriving (Eq, Show)
 
-data FormalParam = FormalParam [ParamModifier] Type Ident
+data FormalParam = FormalParam (Maybe ParamMod) Type Ident
     deriving (Eq, Show)
 
 data VarDecl = VarDecl Ident (Maybe VarInit)
@@ -39,7 +39,15 @@ data Stmt = LocalVar LocalType [VarDecl]
 ------------------------------------------------------------------------
 -- Expressions
 
-data Exp = Lit Literal
+data Exp
+    = Lit Literal
+    | SimpleName Ident [TypeArg]
+    | ParenExp Exp
+    | MemberAccess Exp Ident [TypeArg]
+    | Invocation Exp [Arg]
+    deriving (Eq, Show)
+
+data Arg = Arg (Maybe Ident) (Maybe ArgMod) Exp
     deriving (Eq, Show)
 
 data Literal
@@ -58,8 +66,10 @@ data Literal
 data LocalType = Type Type | Var
     deriving (Eq, Show)
 
+type TypeArg = Type
+
 data Type
-    = UserType Ident
+    = UserType Name [TypeArg]
     | PrimType PrimType
     | ArrayType Type ArrayRank
     deriving (Eq, Show)
@@ -90,7 +100,7 @@ data PrimType
 ------------------------------------------------------------------------
 -- Modifiers
 
-data Modifier
+data Mod
     = New
     | Public
     | Protected
@@ -105,7 +115,10 @@ data Modifier
     | Unsafe
     deriving (Eq, Show)
 
-data ParamModifier = Ref | Out | This
+data ParamMod = RefParam | OutParam | ThisParam
+    deriving (Eq, Show)
+
+data ArgMod = RefArg | OutArg
     deriving (Eq, Show)
 
 ------------------------------------------------------------------------

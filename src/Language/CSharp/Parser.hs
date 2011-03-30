@@ -6,8 +6,9 @@ module Language.CSharp.Parser
     , CompilationUnit (..)
     ) where
 
-import           Control.Applicative hiding (many, (<|>))
+import           Control.Applicative hiding (many, optional, (<|>))
 import           Data.ByteString (ByteString)
+import           Data.List (foldl')
 import           Data.Text (Text)
 import           Prelude hiding ((>>), (>>=))
 import qualified Prelude as P ((>>), (>>=))
@@ -49,7 +50,7 @@ namespace = do
 typeDecl :: P TypeDecl
 typeDecl = withModifiers class_ <?> "type declaration"
 
-class_ :: [Modifier] -> P TypeDecl
+class_ :: [Mod] -> P TypeDecl
 class_ ms = do
     tok Tok_Class
     Class <$> return ms
@@ -59,7 +60,7 @@ class_ ms = do
 member :: P Method
 member = withModifiers method
 
-method :: [Modifier] -> P Method
+method :: [Mod] -> P Method
 method ms = Method <$> return ms
                    <*> returnType
                    <*> (ident <?> "method identifier")
@@ -94,7 +95,16 @@ statement = st localVar
 -- Expressions
 
 expression :: P Exp
-expression = Lit <$> literal
+expression = primary
+
+primary :: P Exp
+primary = primary' `followedBy` primarySuffix
+
+
+primary' :: P Exp
+primary' = Lit <$> literal
+       <|> SimpleName <$> ident <*> typeArgs
+       <|> ParenExp <$> parens expression
 
 literal :: P Literal
 literal = maybeToken $ \t -> case t of
@@ -108,6 +118,29 @@ literal = maybeToken $ \t -> case t of
     Tok_VerbatimLit cs -> Just (Verbatim cs)
     _                  -> Nothing
 
+
+primarySuffix :: P (Exp -> Exp)
+primarySuffix = memberAccess <|> invocation
+
+memberAccess :: P (Exp -> Exp)
+memberAccess = do
+    i <- dot >> ident
+    ts <- typeArgs
+    return $ \e -> MemberAccess e i ts
+
+invocation :: P (Exp -> Exp)
+invocation = do
+    as <- arguments
+    return $ \e -> Invocation e as
+
+arguments :: P [Arg]
+arguments = parens (commaSep argument)
+
+argument :: P Arg
+argument = Arg <$> optionMaybe (try $ ident <* colon)
+               <*> optionMaybe argModifier
+               <*> expression
+
 ------------------------------------------------------------------------
 -- Formal Parameters
 
@@ -115,17 +148,17 @@ formalParams :: P [FormalParam]
 formalParams = parens (commaSep formalParam) <?> "formal parameter list"
 
 formalParam :: P FormalParam
-formalParam = FormalParam <$> many paramModifier
+formalParam = FormalParam <$> optionMaybe paramModifier
                           <*> type_
                           <*> ident
 
 ------------------------------------------------------------------------
 -- Modifiers
 
-withModifiers :: ([Modifier] -> P a) -> P a
+withModifiers :: ([Mod] -> P a) -> P a
 withModifiers p = many modifier >>= p
 
-modifier :: P Modifier
+modifier :: P Mod
 modifier = tok Tok_New       >> return New
        <|> tok Tok_Public    >> return Public
        <|> tok Tok_Protected >> return Protected
@@ -137,10 +170,14 @@ modifier = tok Tok_New       >> return New
        <|> tok Tok_Unsafe    >> return Unsafe
        <?> "modifier (e.g. public)"
 
-paramModifier :: P ParamModifier
-paramModifier = tok Tok_Ref  >> return Ref
-            <|> tok Tok_Out  >> return Out
-            <|> tok Tok_This >> return This
+paramModifier :: P ParamMod
+paramModifier = tok Tok_Ref  >> return RefParam
+            <|> tok Tok_Out  >> return OutParam
+            <|> tok Tok_This >> return ThisParam
+
+argModifier :: P ArgMod
+argModifier = tok Tok_Ref >> return RefArg
+          <|> tok Tok_Out >> return OutArg
 
 ------------------------------------------------------------------------
 -- Types
@@ -154,6 +191,9 @@ returnType = tok Tok_Void >> return Nothing
          <|> Just <$> type_
          <?> "return type"
 
+typeArgs :: P [TypeArg]
+typeArgs = option [] (angles $ commaSep1 type_)
+
 type_ :: P Type
 type_ = do
     t <- coreType
@@ -161,13 +201,11 @@ type_ = do
     return (foldl ArrayType t rs)
   where
     coreType = PrimType <$> primType
-           <|> UserType <$> ident
+           <|> UserType <$> name <*> typeArgs
 
 arrayRank :: P ArrayRank
 arrayRank = do
-    tok Tok_LBracket
-    dims <- many (tok Tok_Comma)
-    tok Tok_RBracket
+    dims <- brackets $ many (tok Tok_Comma)
     return (length dims + 1)
 
 primType :: P PrimType
@@ -202,31 +240,43 @@ ident = maybeToken $ \t -> case t of
 -- Contextual keywords
 
 dynamic :: P ()
-dynamic = keyword' "dynamic"
+dynamic = keyword "dynamic"
 
 var :: P ()
-var = keyword' "var"
+var = keyword "var"
 
-keyword' :: Text -> P ()
-keyword' = tok . Tok_Ident
+keyword :: Text -> P ()
+keyword = tok . Tok_Ident
 
 ------------------------------------------------------------------------
 -- Punctuation
 
-braces, parens :: P a -> P a
-braces = between (tok Tok_LBrace) (tok Tok_RBrace)
-parens = between (tok Tok_LParen) (tok Tok_RParen)
+angles, braces, parens, brackets :: P a -> P a
+angles   = between (tok Tok_Lt)       (tok Tok_Gt)
+braces   = between (tok Tok_LBrace)   (tok Tok_RBrace)
+parens   = between (tok Tok_LParen)   (tok Tok_RParen)
+brackets = between (tok Tok_LBracket) (tok Tok_RBracket)
 
 semi, comma, dot :: P ()
 semi  = tok Tok_Semi
 comma = tok Tok_Comma
 dot   = tok Tok_Dot
+colon = tok Tok_Colon
 
 commaSep :: P a -> P [a]
 commaSep p = p `sepBy` comma
 
+commaSep1 :: P a -> P [a]
+commaSep1 p = p `sepBy1` comma
+
 dotSep1 :: P a -> P [a]
 dotSep1 p = p `sepBy1` dot
+
+followedBy :: P a -> P (a -> a) -> P a
+followedBy p suffix = do
+    x <- p
+    ss <- many suffix
+    return $ foldl' (\a s -> s a) x ss
 
 ------------------------------------------------------------------------
 -- Token parsing
