@@ -118,11 +118,11 @@ throw      { constTok Tok_Throw      }
 true       { constTok Tok_True       }
 try        { constTok Tok_Try        }
 typeof     { constTok Tok_Typeof     }
-uint       { constTok Tok_Uint       }
-ulong      { constTok Tok_Ulong      }
+uint       { constTok Tok_UInt       }
+ulong      { constTok Tok_ULong      }
 unchecked  { constTok Tok_Unchecked  }
 unsafe     { constTok Tok_Unsafe     }
-ushort     { constTok Tok_Ushort     }
+ushort     { constTok Tok_UShort     }
 using      { constTok Tok_Using      }
 virtual    { constTok Tok_Virtual    }
 void       { constTok Tok_Void       }

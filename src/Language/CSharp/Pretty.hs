@@ -23,29 +23,29 @@ render' = render . pretty
 -- Top level
 
 instance Pretty CompilationUnit where
-    pretty (CompilationUnit ns) = vcatSep ns
+    pretty (CompilationUnit ns) = vsep' ns
 
 instance Pretty Namespace where
     pretty (Namespace n ts) =
         text "namespace" <+> pretty n
-        $+$ block (vcatSep ts)
+        $+$ block (vsep' ts)
 
 ------------------------------------------------------------------------
 -- Declarations
 
 instance Pretty TypeDecl where
     pretty (Class mds n ms) =
-        hcatMap mds <+> text "class" <+> pretty n
-        $+$ block (vcatSep ms)
+        hcat' mds <+> text "class" <+> pretty n
+        $+$ block (vsep' ms)
 
 instance Pretty Method where
     pretty (Method ms t n ps stmts) =
-        hcatMap ms <+> pretty t <+> pretty n <> parens (hcatComma ps)
-        $+$ block (vcatMap stmts)
+        hcat' ms <+> pretty t <+> pretty n <> parens (hcatComma ps)
+        $+$ block (vcat' stmts)
 
 instance Pretty FormalParam where
     pretty (FormalParam ms t n) =
-        hcatMap ms <+> pretty t <+> pretty n
+        hcat' ms <+> pretty t <+> pretty n
 
 instance Pretty VarDecl where
     pretty (VarDecl n Nothing)  = pretty n
@@ -68,10 +68,14 @@ instance Pretty Exp where
     pretty (Lit lit) = pretty lit
 
 instance Pretty Literal where
-    pretty (Null)       = text "null"
-    pretty (Bool True)  = text "true"
-    pretty (Bool False) = text "false"
-    pretty (Int n)      = text n
+    pretty (Null)        = text "null"
+    pretty (Bool True)   = text "true"
+    pretty (Bool False)  = text "false"
+    pretty (Int n)       = text n
+    pretty (Real f)      = text f
+    pretty (Char c)      = char '\''  <> text c  <> char '\''
+    pretty (String cs)   = char '"'   <> text cs <> char '"'
+    pretty (Verbatim cs) = text "@\"" <> text cs <> char '"'
 
 ------------------------------------------------------------------------
 -- Types
@@ -80,10 +84,15 @@ instance Pretty (Maybe Type) where
     pretty Nothing  = text "void"
     pretty (Just t) = pretty t
 
-instance Pretty Type where
-    pretty (SimpleType st) = pretty st
+instance Pretty LocalType where
+    pretty (Type t) = pretty t
+    pretty Var      = text "var"
 
-instance Pretty SimpleType where
+instance Pretty Type where
+    pretty (PrimType t) = pretty t
+    pretty (UserType t) = pretty t
+
+instance Pretty PrimType where
     pretty BoolT    = text "bool"
     pretty SByteT   = text "sbyte"
     pretty ByteT    = text "byte"
@@ -97,6 +106,9 @@ instance Pretty SimpleType where
     pretty FloatT   = text "float"
     pretty DoubleT  = text "double"
     pretty DecimalT = text "decimal"
+    pretty ObjectT  = text "object"
+    pretty StringT  = text "string"
+    pretty DynamicT = text "dynamic"
 
 instance Pretty Modifier where
     pretty New       = text "new"
@@ -138,16 +150,19 @@ block x = char '{'
       $+$ char '}'
 
 blank :: Doc
-blank = nest (-10000) (text "")
+blank = nest (-1000) (text "")
 
-vcatSep :: Pretty a => [a] -> Doc
-vcatSep = vcat . intersperse blank . map pretty
+vsep :: [Doc] -> Doc
+vsep = foldr ($+$) empty
 
-vcatMap :: Pretty a => [a] -> Doc
-vcatMap = vcat . map pretty
+vsep' :: Pretty a => [a] -> Doc
+vsep' = vsep . intersperse blank . map pretty
 
-hcatMap :: Pretty a => [a] -> Doc
-hcatMap = hcat . map pretty
+vcat' :: Pretty a => [a] -> Doc
+vcat' = vcat . map pretty
+
+hcat' :: Pretty a => [a] -> Doc
+hcat' = hcat . map pretty
 
 hcatComma :: Pretty a => [a] -> Doc
 hcatComma = hcatSep (comma <> space)

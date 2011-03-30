@@ -28,14 +28,6 @@ main = do
     ts <- forkJoin analyzeFile fs
     putStrLn $ "Lexed " ++ show (sum ts) ++ " tokens"
 
-    --result <- parseFromFile compilationUnit input
-    --case result of
-    --    Left err -> error (show err)
-    --    Right xs -> writeFile output $ (render' xs) ++ "\n"
-
-    --pid <- runCommand $ "diff -s " ++ input ++ " " ++ output
-    --waitForProcess pid
-
 getFiles :: FilePath -> IO [FilePath]
 getFiles path | csharp    = return [path]
               | otherwise = do
@@ -67,11 +59,12 @@ analyzeFile path = {-# SCC "analyze" #-} do
         Left err -> error (show err)
         Right xs -> writeFile path' $ render' xs ++ "\n"
 
+    putStrLn $ file ++ ": " ++ show (length tokens)
+            ++ " tokens (" ++ encoding ++ ")"
+
     putStrLn $ "diff -s " ++ file ++ " " ++ file'
     pid <- runCommand $ "diff -s " ++ path ++ " " ++ path'
     waitForProcess pid
-
-    --putStrLn $ file ++ ": " ++ show (length ts) ++ " tokens (" ++ enc ++ ")"
 
     return (length tokens)
   where

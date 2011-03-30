@@ -13,9 +13,9 @@ namespace Language.CSharp
             long l = 60lU;
 
             // characters
-            char c = 'a', c2 = '@', c3 = '*',
-                 c5 = '\x123', c6 = '\u1234', c7 = '\U12345678',
-                 c10 = '\\', c11 = '\'';
+            char c = 'a', c2 = '@', c3 = '*';
+            char c5 = '\x123', c6 = '\u1234', c7 = '\U12345678';
+            char c10 = '\\', c11 = '\'';
 
             // some strings
             string simple = "this is a simple string";
@@ -30,13 +30,13 @@ namespace Language.CSharp
        \r\n\t\b\a\v\";
 
             // some lambda
-            var f = x => x + 1;
+            //var f = x => x + 1;
 
-            ulong x = 100;
-            x >>= 3;
-            x <<= 6;
+            //ulong x = 100;
+            //x >>= 3;
+            //x <<= 6;
 
-            global::System.Console.WriteLine("f\'r\"e\\d");
+            //global::System.Console.WriteLine("f\'r\"e\\d");
         }
 #if 0
 #  error :(

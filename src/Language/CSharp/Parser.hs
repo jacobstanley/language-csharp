@@ -66,7 +66,7 @@ method ms = Method <$> return ms
                    <?> "method declaration"
 
 localVar :: P Stmt
-localVar = LocalVar <$> type_
+localVar = LocalVar <$> localType
                     <*> commaSep varDecl
 
 varDecl :: P VarDecl
@@ -96,11 +96,15 @@ expression = Lit <$> literal
 
 literal :: P Literal
 literal = maybeToken $ \t -> case t of
-    Tok_Null     -> Just Null
-    Tok_True     -> Just (Bool True)
-    Tok_False    -> Just (Bool False)
-    Tok_IntLit i -> Just (Int i)
-    _            -> Nothing
+    Tok_Null           -> Just Null
+    Tok_True           -> Just (Bool True)
+    Tok_False          -> Just (Bool False)
+    Tok_IntLit n       -> Just (Int n)
+    Tok_RealLit f      -> Just (Real f)
+    Tok_CharLit c      -> Just (Char c)
+    Tok_StringLit cs   -> Just (String cs)
+    Tok_VerbatimLit cs -> Just (Verbatim cs)
+    _                  -> Nothing
 
 ------------------------------------------------------------------------
 -- Formal Parameters
@@ -139,27 +143,35 @@ paramModifier = tok Tok_Ref  >> return Ref
 ------------------------------------------------------------------------
 -- Types
 
+localType :: P LocalType
+localType = Type <$> type_
+        <|> var >> return Var
+
 type_ :: P Type
-type_ = SimpleType <$> simpleType
+type_ = PrimType <$> primType
+    <|> UserType <$> ident
 
 returnType :: P (Maybe Type)
 returnType = tok Tok_Void >> return Nothing
          <|> Just <$> type_
          <?> "return type"
 
-simpleType :: P SimpleType
-simpleType = tok Tok_Bool    >> return BoolT
-         <|> tok Tok_Sbyte   >> return SByteT
-         <|> tok Tok_Short   >> return ShortT
-         <|> tok Tok_Ushort  >> return UShortT
-         <|> tok Tok_Int     >> return IntT
-         <|> tok Tok_Uint    >> return UIntT
-         <|> tok Tok_Long    >> return LongT
-         <|> tok Tok_Ulong   >> return ULongT
-         <|> tok Tok_Char    >> return CharT
-         <|> tok Tok_Float   >> return FloatT
-         <|> tok Tok_Double  >> return DoubleT
-         <|> tok Tok_Decimal >> return DecimalT
+primType :: P PrimType
+primType = tok Tok_Bool    >> return BoolT
+       <|> tok Tok_Sbyte   >> return SByteT
+       <|> tok Tok_Short   >> return ShortT
+       <|> tok Tok_UShort  >> return UShortT
+       <|> tok Tok_Int     >> return IntT
+       <|> tok Tok_UInt    >> return UIntT
+       <|> tok Tok_Long    >> return LongT
+       <|> tok Tok_ULong   >> return ULongT
+       <|> tok Tok_Char    >> return CharT
+       <|> tok Tok_Float   >> return FloatT
+       <|> tok Tok_Double  >> return DoubleT
+       <|> tok Tok_Decimal >> return DecimalT
+       <|> tok Tok_Object  >> return ObjectT
+       <|> tok Tok_String  >> return StringT
+       <|> dynamic         >> return DynamicT
 
 ------------------------------------------------------------------------
 -- Names and identifiers
@@ -171,6 +183,18 @@ ident :: P Ident
 ident = maybeToken $ \t -> case t of
     Tok_Ident i -> Just (Ident i)
     _           -> Nothing
+
+------------------------------------------------------------------------
+-- Contextual keywords
+
+dynamic :: P ()
+dynamic = keyword' "dynamic"
+
+var :: P ()
+var = keyword' "var"
+
+keyword' :: String -> P ()
+keyword' = tok . Tok_Ident
 
 ------------------------------------------------------------------------
 -- Punctuation

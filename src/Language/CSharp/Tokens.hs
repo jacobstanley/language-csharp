@@ -85,11 +85,11 @@ data Token
     | Tok_True
     | Tok_Try
     | Tok_Typeof
-    | Tok_Uint
-    | Tok_Ulong
+    | Tok_UInt
+    | Tok_ULong
     | Tok_Unchecked
     | Tok_Unsafe
-    | Tok_Ushort
+    | Tok_UShort
     | Tok_Using
     | Tok_Virtual
     | Tok_Void

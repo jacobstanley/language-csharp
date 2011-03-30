@@ -30,7 +30,7 @@ data VarInit = InitExp Exp
 ------------------------------------------------------------------------
 -- Statements
 
-data Stmt = LocalVar Type [VarDecl]
+data Stmt = LocalVar LocalType [VarDecl]
     deriving (Eq, Show)
 
 ------------------------------------------------------------------------
@@ -43,15 +43,23 @@ data Literal
     = Null
     | Bool Bool
     | Int String
+    | Real String
+    | Char String
+    | String String
+    | Verbatim String
     deriving (Eq, Show)
 
 ------------------------------------------------------------------------
 -- Types
 
-data Type = SimpleType SimpleType
+data LocalType = Type Type | Var
     deriving (Eq, Show)
 
-data SimpleType
+data Type = PrimType PrimType | UserType Ident
+    deriving (Eq, Show)
+
+data PrimType
+    -- Value types
     = BoolT
     | SByteT
     | ByteT
@@ -65,8 +73,14 @@ data SimpleType
     | FloatT
     | DoubleT
     | DecimalT
-    | VarT
+    -- Reference types
+    | ObjectT
+    | StringT
+    | DynamicT
     deriving (Eq, Show)
+
+------------------------------------------------------------------------
+-- Modifiers
 
 data Modifier
     = New
@@ -85,6 +99,9 @@ data Modifier
 
 data ParamModifier = Ref | Out | This
     deriving (Eq, Show)
+
+------------------------------------------------------------------------
+-- Identifiers
 
 data Ident = Ident String
     deriving (Eq, Show)
