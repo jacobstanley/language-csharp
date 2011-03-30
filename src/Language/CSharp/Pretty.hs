@@ -2,9 +2,11 @@
 
 module Language.CSharp.Pretty where
 
-import Data.List (intersperse)
-import Text.PrettyPrint
-import Language.CSharp.Syntax
+import qualified Data.ByteString.Char8 as B
+import           Data.List (intersperse)
+import qualified Data.Text as T
+import           Text.PrettyPrint
+import           Language.CSharp.Syntax
 
 ------------------------------------------------------------------------
 -- Pretty typeclass
@@ -71,11 +73,11 @@ instance Pretty Literal where
     pretty (Null)        = text "null"
     pretty (Bool True)   = text "true"
     pretty (Bool False)  = text "false"
-    pretty (Int n)       = text n
-    pretty (Real f)      = text f
-    pretty (Char c)      = char '\''  <> text c  <> char '\''
-    pretty (String cs)   = char '"'   <> text cs <> char '"'
-    pretty (Verbatim cs) = text "@\"" <> text cs <> char '"'
+    pretty (Int n)       = pretty n
+    pretty (Real f)      = pretty f
+    pretty (Char c)      = char '\''  <> pretty c  <> char '\''
+    pretty (String cs)   = char '"'   <> pretty cs <> char '"'
+    pretty (Verbatim cs) = text "@\"" <> pretty cs <> char '"'
 
 ------------------------------------------------------------------------
 -- Types
@@ -136,7 +138,16 @@ instance Pretty Name where
     pretty (Name is) = hcat $ punctuate (char '.') $ map pretty is
 
 instance Pretty Ident where
-    pretty (Ident s) = text s
+    pretty (Ident s) = pretty s
+
+------------------------------------------------------------------------
+-- ByteString / Text
+
+instance Pretty B.ByteString where
+    pretty = text . B.unpack
+
+instance Pretty T.Text where
+    pretty = text . T.unpack
 
 ------------------------------------------------------------------------
 -- Helpers

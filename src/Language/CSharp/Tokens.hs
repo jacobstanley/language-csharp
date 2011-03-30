@@ -4,6 +4,9 @@ module Language.CSharp.Tokens
     , Token (..)
     ) where
 
+import Data.ByteString (ByteString)
+import Data.Text (Text)
+
 ------------------------------------------------------------------------
 -- Position info
 
@@ -149,13 +152,13 @@ data Token
     | Tok_Lambda
 
     -- Identifiers
-    | Tok_Ident String
+    | Tok_Ident Text
 
     -- Literals
-    | Tok_IntLit String
-    | Tok_RealLit String
-    | Tok_CharLit String
-    | Tok_StringLit String
-    | Tok_VerbatimLit String
+    | Tok_IntLit ByteString
+    | Tok_RealLit ByteString
+    | Tok_CharLit Text
+    | Tok_StringLit Text
+    | Tok_VerbatimLit Text
 
   deriving (Eq, Show)

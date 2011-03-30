@@ -1,4 +1,5 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Language.CSharp.Parser
     ( parseCSharp
@@ -7,6 +8,7 @@ module Language.CSharp.Parser
 
 import           Control.Applicative hiding (many, (<|>))
 import           Data.ByteString (ByteString)
+import           Data.Text (Text)
 import           Prelude hiding ((>>), (>>=))
 import qualified Prelude as P ((>>), (>>=))
 import           Text.Parsec
@@ -193,7 +195,7 @@ dynamic = keyword' "dynamic"
 var :: P ()
 var = keyword' "var"
 
-keyword' :: String -> P ()
+keyword' :: Text -> P ()
 keyword' = tok . Tok_Ident
 
 ------------------------------------------------------------------------

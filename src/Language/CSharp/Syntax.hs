@@ -1,5 +1,8 @@
 module Language.CSharp.Syntax where
 
+import Data.ByteString (ByteString)
+import Data.Text (Text)
+
 ------------------------------------------------------------------------
 -- Top level
 
@@ -42,11 +45,11 @@ data Exp = Lit Literal
 data Literal
     = Null
     | Bool Bool
-    | Int String
-    | Real String
-    | Char String
-    | String String
-    | Verbatim String
+    | Int ByteString
+    | Real ByteString
+    | Char Text
+    | String Text
+    | Verbatim Text
     deriving (Eq, Show)
 
 ------------------------------------------------------------------------
@@ -103,7 +106,7 @@ data ParamModifier = Ref | Out | This
 ------------------------------------------------------------------------
 -- Identifiers
 
-data Ident = Ident String
+data Ident = Ident Text
     deriving (Eq, Show)
 
 data Name = Name [Ident]

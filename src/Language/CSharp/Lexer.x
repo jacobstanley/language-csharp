@@ -1,12 +1,15 @@
 {
+{-# OPTIONS_GHC -fno-warn-tabs #-}
+
 module Language.CSharp.Lexer
     ( L (..)
     , Token (..)
     , lexer
     ) where
 
+import qualified Data.ByteString as B
 import qualified Data.Text as T
-import           Numeric
+import qualified Data.Text.Encoding as T
 import           Language.CSharp.Tokens
 }
 
@@ -182,29 +185,30 @@ while      { constTok Tok_While      }
 \=\>   { constTok Tok_Lambda     }
 
 -- Integer literals
-      $digit+     @int_suffix? { stringTok Tok_IntLit }
-0[xX] $hex_digit+ @int_suffix? { stringTok Tok_IntLit }
+      $digit+     @int_suffix? { bstrTok Tok_IntLit }
+0[xX] $hex_digit+ @int_suffix? { bstrTok Tok_IntLit }
 
 -- Real literals
-$digit+ \. $digit+ @exponent? @real_suffix? { stringTok Tok_RealLit }
-        \. $digit+ @exponent? @real_suffix? { stringTok Tok_RealLit }
-           $digit+ @exponent  @real_suffix? { stringTok Tok_RealLit }
-           $digit+            @real_suffix  { stringTok Tok_RealLit }
+$digit+ \. $digit+ @exponent? @real_suffix? { bstrTok Tok_RealLit }
+        \. $digit+ @exponent? @real_suffix? { bstrTok Tok_RealLit }
+           $digit+ @exponent  @real_suffix? { bstrTok Tok_RealLit }
+           $digit+            @real_suffix  { bstrTok Tok_RealLit }
 
 -- Character / String literals
-\' @character \'             { stringTok (Tok_CharLit . drop 1 . init)     }
-\" @string_character* \"     { stringTok (Tok_StringLit . drop 1 . init)   }
-\@\" @verbatim_character* \" { stringTok (Tok_VerbatimLit . drop 2 . init) }
+\' @character \'             { textTok (Tok_CharLit . T.drop 1 . T.init)     }
+\" @string_character* \"     { textTok (Tok_StringLit . T.drop 1 . T.init)   }
+\@\" @verbatim_character* \" { textTok (Tok_VerbatimLit . T.drop 2 . T.init) }
 
 -- Identifiers
-$ident_start $ident_part* { stringTok Tok_Ident }
+$ident_start $ident_part* { textTok Tok_Ident }
 {
 
 wrap :: (str -> tok) -> AlexPosn -> str -> L tok
 wrap f (AlexPn _ line col) s = L (line, col) (f s)
 
 constTok = wrap . const
-stringTok f = wrap (f . T.unpack)
+bstrTok f = wrap (f . T.encodeUtf8)
+textTok = wrap
 
 lexer :: String -> T.Text -> [L Token]
 lexer file text = go (alexStartPos, '\n', text `T.snoc` '\n')
@@ -253,5 +257,4 @@ alexMove :: AlexPosn -> Char -> AlexPosn
 alexMove (AlexPn a l c) '\t' = AlexPn (a+1)  l     (((c+7) `div` 8)*8+1)
 alexMove (AlexPn a l c) '\n' = AlexPn (a+1) (l+1)   1
 alexMove (AlexPn a l c) _    = AlexPn (a+1)  l     (c+1)
-
 }
