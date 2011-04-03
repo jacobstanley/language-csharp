@@ -27,7 +27,7 @@ data FormalParam = FormalParam (Maybe ParamMod) Type Ident
 data VarDecl = VarDecl Ident (Maybe VarInit)
     deriving (Eq, Show)
 
-data VarInit = InitExp Exp
+data VarInit = VarInitExp Exp
     deriving (Eq, Show)
 
 ------------------------------------------------------------------------
@@ -45,18 +45,30 @@ data Exp
     | ParenExp Exp
     | MemberAccess Exp Ident [TypeArg]
     | Invocation Exp [Arg]
-    | ElementAccess Exp Exp
+    | ElementAccess Exp [Exp]
     | ThisAccess
     | BaseMember Ident
-    | BaseElement Exp
+    | BaseElement [Exp]
     | PostIncrement Exp
     | PostDecrement Exp
     | PreIncrement Exp
     | PreDecrement Exp
-    | ObjectCreation Type [Arg]
+    | ObjectCreation Type [Arg] (Maybe ObjectInit)
     deriving (Eq, Show)
 
 data Arg = Arg (Maybe Ident) (Maybe ArgMod) Exp
+    deriving (Eq, Show)
+
+data ObjectInit
+    = ObjectInit [MemberInit]
+    deriving (Eq, Show)
+
+data MemberInit = MemberInit Ident InitVal
+    deriving (Eq, Show)
+
+data InitVal
+    = InitVal Exp
+    | InitObject ObjectInit
     deriving (Eq, Show)
 
 data Literal

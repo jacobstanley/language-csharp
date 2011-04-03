@@ -54,7 +54,7 @@ instance Pretty VarDecl where
     pretty (VarDecl n (Just d)) = pp n <+> equals <+> pp d
 
 instance Pretty VarInit where
-    pretty (InitExp exp) = pp exp
+    pretty (VarInitExp exp) = pp exp
 
 ------------------------------------------------------------------------
 -- Statements
@@ -66,18 +66,24 @@ instance Pretty Stmt where
 -- Expressions
 
 instance Pretty Exp where
-    pretty (Lit lit)               = pp lit
-    pretty (SimpleName n ts)       = pp n <> pp ts
-    pretty (ParenExp exp)          = parens (pp exp)
-    pretty (MemberAccess exp n ts) = pp exp <> dot <> pp n <> pp ts
-    pretty (Invocation exp args)   = pp exp <> parens (params args)
-    pretty (ElementAccess exp idx) = pp exp <> brackets (pp idx)
-    pretty (ThisAccess)            = text "this"
-    pretty (BaseMember n)          = text "base" <> dot <> pp n
-    pretty (BaseElement idx)       = text "base" <> brackets (pp idx)
-    pretty (PostIncrement exp)     = pp exp <> text "++"
-    pretty (PostDecrement exp)     = pp exp <> text "--"
-    pretty (ObjectCreation t args) = text "new" <+> pp t <> parens (params args)
+    pretty (Lit lit)                = pp lit
+    pretty (SimpleName n ts)        = pp n <> pp ts
+    pretty (ParenExp exp)           = parens (pp exp)
+    pretty (MemberAccess exp n ts)  = pp exp <> dot <> pp n <> pp ts
+    pretty (Invocation exp args)    = pp exp <> invoke args
+    pretty (ElementAccess exp ixs)  = pp exp <> brackets (params ixs)
+    pretty (ThisAccess)             = text "this"
+    pretty (BaseMember n)           = text "base" <> dot <> pp n
+    pretty (BaseElement ixs)        = text "base" <> brackets (params ixs)
+    pretty (PostIncrement exp)      = pp exp <> text "++"
+    pretty (PostDecrement exp)      = pp exp <> text "--"
+
+    pretty (ObjectCreation t [] (Just oi)) = new t $+$ pp oi
+    pretty (ObjectCreation t as (Just oi)) = new t <> invoke as $+$ pp oi
+    pretty (ObjectCreation t as Nothing)   = new t <> invoke as
+
+new :: Pretty a => a -> Doc
+new t = text "new" <+> pp t
 
 instance Pretty Arg where
     pretty (Arg i m e) = name i <> mod m <> pp e
@@ -86,6 +92,16 @@ instance Pretty Arg where
         name (Just i') = pp i' <> colon <> space
         mod Nothing    = empty
         mod (Just m')  = pp m' <> space
+
+instance Pretty ObjectInit where
+    pretty (ObjectInit ms) = block (vcat' ms)
+
+instance Pretty MemberInit where
+    pretty (MemberInit n v) = pp n <+> equals <+> pp v
+
+instance Pretty InitVal where
+    pretty (InitVal exp)   = pp exp
+    pretty (InitObject oi) = pp oi
 
 instance Pretty Literal where
     pretty (Null)        = text "null"
@@ -188,6 +204,9 @@ block :: Doc -> Doc
 block x = char '{'
       $+$ nest indent x
       $+$ char '}'
+
+invoke :: Pretty a => [a] -> Doc
+invoke xs = parens (params xs)
 
 params :: Pretty a => [a] -> Doc
 params = hcatSep' (comma <> space)

@@ -61,14 +61,14 @@ method ms = Method <$> pure ms
 
 localVar :: P Stmt
 localVar = LocalVar <$> localType
-                    <*> commaSep varDecl
+                    <*> varDecl `sepBy` comma
 
 varDecl :: P VarDecl
 varDecl = VarDecl <$> ident
                   <*> optionMaybe varInit
 
 varInit :: P VarInit
-varInit = InitExp <$> (tok Tok_Assign *> expression)
+varInit = VarInitExp <$> (tok Tok_Assign *> expression)
 
 ------------------------------------------------------------------------
 -- Statements
@@ -120,13 +120,32 @@ thisAccess = tok Tok_This *> pure ThisAccess
 baseAccess :: P Exp
 baseAccess = tok Tok_Base *> access
   where
-    access = BaseElement <$> brackets expression
-         <|> BaseMember <$> (dot *> ident)
+    access = BaseElement <$> brackets (expression `sepBy1` comma)
+         <|> BaseMember  <$> (dot *> ident)
+
+--------------------------------
+-- Object Creation
 
 objectCreation :: P Exp
-objectCreation = tok Tok_New *> ctor
+objectCreation = do
+    tok Tok_New
+    t <- type_
+    as <- optional arguments
+    mi <- initializer as
+    return $ ObjectCreation t (maybe [] id as) mi
   where
-    ctor = ObjectCreation <$> type_ <*> arguments
+    initializer Nothing  = Just <$> objectInitializer
+    initializer (Just _) = optional objectInitializer
+
+objectInitializer :: P ObjectInit
+objectInitializer = ObjectInit <$> braces (memberInitializer `sepEndBy` comma)
+
+memberInitializer :: P MemberInit
+memberInitializer = MemberInit <$> ident <*> (assign *> initializerValue)
+
+initializerValue :: P InitVal
+initializerValue = InitObject <$> objectInitializer
+               <|> InitVal <$> expression
 
 --------------------------------
 -- Suffix Expressions
@@ -151,8 +170,8 @@ invocation = do
 
 elementAccess :: P (Exp -> Exp)
 elementAccess = do
-    idx <- brackets expression
-    return $ \e -> ElementAccess e idx
+    ixs <- brackets (expression `sepBy1` comma)
+    return $ \e -> ElementAccess e ixs
 
 postIncrement :: P (Exp -> Exp)
 postIncrement = tok Tok_Increment *> pure PostIncrement
@@ -164,7 +183,7 @@ postDecrement = tok Tok_Decrement *> pure PostDecrement
 -- Formal Parameters / Invocation Arguments
 
 formalParams :: P [FormalParam]
-formalParams = parens (commaSep formalParam) <?> "formal parameter list"
+formalParams = parens (formalParam `sepBy` comma) <?> "formal parameter list"
 
 formalParam :: P FormalParam
 formalParam = FormalParam <$> optionMaybe paramModifier
@@ -172,7 +191,7 @@ formalParam = FormalParam <$> optionMaybe paramModifier
                           <*> ident
 
 arguments :: P [Arg]
-arguments = parens (commaSep argument)
+arguments = parens (argument `sepBy` comma)
 
 argument :: P Arg
 argument = Arg <$> optionMaybe (try $ ident <* colon)
@@ -219,7 +238,7 @@ returnType = tok Tok_Void *> pure Nothing
          <?> "return type"
 
 typeArgs :: P [TypeArg]
-typeArgs = option [] (angles $ commaSep1 type_)
+typeArgs = option [] (angles $ type_ `sepBy1` comma)
 
 type_ :: P Type
 type_ = do
@@ -256,7 +275,7 @@ primType = tok Tok_Bool    *> pure BoolT
 -- Names and identifiers
 
 name :: P Name
-name = Name <$> dotSep1 ident
+name = Name <$> ident `sepBy1` dot
 
 ident :: P Ident
 ident = maybeToken $ \t -> case t of
@@ -284,20 +303,12 @@ braces   = between (tok Tok_LBrace)   (tok Tok_RBrace)
 parens   = between (tok Tok_LParen)   (tok Tok_RParen)
 brackets = between (tok Tok_LBracket) (tok Tok_RBracket)
 
-semi, comma, dot :: P ()
-semi  = tok Tok_Semi
-comma = tok Tok_Comma
-dot   = tok Tok_Dot
-colon = tok Tok_Colon
-
-commaSep :: P a -> P [a]
-commaSep p = p `sepBy` comma
-
-commaSep1 :: P a -> P [a]
-commaSep1 p = p `sepBy1` comma
-
-dotSep1 :: P a -> P [a]
-dotSep1 p = p `sepBy1` dot
+semi, comma, dot, colon, assign :: P ()
+semi   = tok Tok_Semi
+comma  = tok Tok_Comma
+dot    = tok Tok_Dot
+colon  = tok Tok_Colon
+assign = tok Tok_Assign
 
 followedBy :: P a -> P (a -> a) -> P a
 followedBy p suffix = do

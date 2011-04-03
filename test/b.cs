@@ -48,6 +48,7 @@ namespace Language.CSharp
             // element access
             var z1 = xs[0];
             var z2 = x.GetArray()[x.BestIndex()];
+            var z3 = x.Rank2Please()[abc, x.ElementAccess()];
 
             // this access
             var z3 = this;
@@ -55,7 +56,7 @@ namespace Language.CSharp
 
             // base access
             var b1 = base.MemberAccess();
-            var b2 = base[elementAccess];
+            var b2 = base[123, z.ElementAccess];
 
             // post increment/decrement
             var inc = i++;
@@ -63,6 +64,16 @@ namespace Language.CSharp
 
             // object creation
             List<int> xs = new List<int>(106, "whee");
+            Person obj = new Person
+                         {
+                             Name = "Fred"
+                         };
+
+            Boat b = new Boat("yeah", 1)
+                     {
+                         ImOnIt = true,
+                         //Nested = { Yes = It { Is = true } },
+                     };
         }
 #if 0
 #  error :(
