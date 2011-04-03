@@ -1,4 +1,4 @@
 *.swp
 /dist
-*.pretty.cs
+*.roundtrip.cs
 src/Language/CSharp/Lexer.hs

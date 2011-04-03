@@ -69,7 +69,7 @@ analyzeFile path = {-# SCC "analyze" #-} do
     return (length tokens)
   where
     file  = takeFileName path
-    path' = replaceExtension path ".pretty.cs"
+    path' = replaceExtension path ".roundtrip.cs"
     file' = takeFileName path'
 
     detect bs = case detectEncoding bs of
