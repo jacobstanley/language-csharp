@@ -6,26 +6,17 @@ module Language.CSharp.Parser
     , CompilationUnit (..)
     ) where
 
-import           Control.Applicative hiding (many, optional, (<|>))
+import           Control.Applicative
 import           Data.ByteString (ByteString)
 import           Data.List (foldl')
 import           Data.Text (Text)
-import           Prelude hiding ((>>), (>>=))
-import qualified Prelude as P ((>>), (>>=))
-import           Text.Parsec
+import           Text.Parsec hiding (many, optional, (<|>))
 import           Text.Parsec.String (GenParser)
 import           Text.Parsec.Pos
 import qualified Text.Parsec as Parsec
 
 import           Language.CSharp.Syntax
 import           Language.CSharp.Tokens
-
--- A trick to allow >> and >>=, normally infixr 1, to be
--- used inside branches of <|>, which is declared as infixl 1.
--- There are no clashes with other operators of precedence 2.
-(>>) = (P.>>)
-(>>=) = (P.>>=)
-infixr 2 >>, >>=
 
 ------------------------------------------------------------------------
 -- Top level
@@ -53,7 +44,7 @@ typeDecl = withModifiers class_ <?> "type declaration"
 class_ :: [Mod] -> P TypeDecl
 class_ ms = do
     tok Tok_Class
-    Class <$> return ms
+    Class <$> pure ms
           <*> ident
           <*> braces (many member)
 
@@ -61,7 +52,7 @@ member :: P Method
 member = withModifiers method
 
 method :: [Mod] -> P Method
-method ms = Method <$> return ms
+method ms = Method <$> pure ms
                    <*> returnType
                    <*> (ident <?> "method identifier")
                    <*> formalParams
@@ -77,7 +68,7 @@ varDecl = VarDecl <$> ident
                   <*> optionMaybe varInit
 
 varInit :: P VarInit
-varInit = tok Tok_Assign >> InitExp <$> expression
+varInit = InitExp <$> (tok Tok_Assign *> expression)
 
 ------------------------------------------------------------------------
 -- Statements
@@ -139,7 +130,7 @@ primarySuffix = memberAccess <|> invocation <|> elementAccess
 
 memberAccess :: P (Exp -> Exp)
 memberAccess = do
-    i <- dot >> ident
+    i <- dot *> ident
     ts <- typeArgs
     return $ \e -> MemberAccess e i ts
 
@@ -179,35 +170,35 @@ withModifiers :: ([Mod] -> P a) -> P a
 withModifiers p = many modifier >>= p
 
 modifier :: P Mod
-modifier = tok Tok_New       >> return New
-       <|> tok Tok_Public    >> return Public
-       <|> tok Tok_Protected >> return Protected
-       <|> tok Tok_Internal  >> return Internal
-       <|> tok Tok_Private   >> return Private
-       <|> tok Tok_Abstract  >> return Abstract
-       <|> tok Tok_Sealed    >> return Sealed
-       <|> tok Tok_Static    >> return Static
-       <|> tok Tok_Unsafe    >> return Unsafe
+modifier = tok Tok_New       *> pure New
+       <|> tok Tok_Public    *> pure Public
+       <|> tok Tok_Protected *> pure Protected
+       <|> tok Tok_Internal  *> pure Internal
+       <|> tok Tok_Private   *> pure Private
+       <|> tok Tok_Abstract  *> pure Abstract
+       <|> tok Tok_Sealed    *> pure Sealed
+       <|> tok Tok_Static    *> pure Static
+       <|> tok Tok_Unsafe    *> pure Unsafe
        <?> "modifier (e.g. public)"
 
 paramModifier :: P ParamMod
-paramModifier = tok Tok_Ref  >> return RefParam
-            <|> tok Tok_Out  >> return OutParam
-            <|> tok Tok_This >> return ThisParam
+paramModifier = tok Tok_Ref  *> pure RefParam
+            <|> tok Tok_Out  *> pure OutParam
+            <|> tok Tok_This *> pure ThisParam
 
 argModifier :: P ArgMod
-argModifier = tok Tok_Ref >> return RefArg
-          <|> tok Tok_Out >> return OutArg
+argModifier = tok Tok_Ref *> pure RefArg
+          <|> tok Tok_Out *> pure OutArg
 
 ------------------------------------------------------------------------
 -- Types
 
 localType :: P LocalType
 localType = Type <$> type_
-        <|> var >> return Var
+        <|> var *> pure Var
 
 returnType :: P (Maybe Type)
-returnType = tok Tok_Void >> return Nothing
+returnType = tok Tok_Void *> pure Nothing
          <|> Just <$> type_
          <?> "return type"
 
@@ -229,21 +220,21 @@ arrayRank = do
     return (length dims + 1)
 
 primType :: P PrimType
-primType = tok Tok_Bool    >> return BoolT
-       <|> tok Tok_Sbyte   >> return SByteT
-       <|> tok Tok_Short   >> return ShortT
-       <|> tok Tok_UShort  >> return UShortT
-       <|> tok Tok_Int     >> return IntT
-       <|> tok Tok_UInt    >> return UIntT
-       <|> tok Tok_Long    >> return LongT
-       <|> tok Tok_ULong   >> return ULongT
-       <|> tok Tok_Char    >> return CharT
-       <|> tok Tok_Float   >> return FloatT
-       <|> tok Tok_Double  >> return DoubleT
-       <|> tok Tok_Decimal >> return DecimalT
-       <|> tok Tok_Object  >> return ObjectT
-       <|> tok Tok_String  >> return StringT
-       <|> dynamic         >> return DynamicT
+primType = tok Tok_Bool    *> pure BoolT
+       <|> tok Tok_Sbyte   *> pure SByteT
+       <|> tok Tok_Short   *> pure ShortT
+       <|> tok Tok_UShort  *> pure UShortT
+       <|> tok Tok_Int     *> pure IntT
+       <|> tok Tok_UInt    *> pure UIntT
+       <|> tok Tok_Long    *> pure LongT
+       <|> tok Tok_ULong   *> pure ULongT
+       <|> tok Tok_Char    *> pure CharT
+       <|> tok Tok_Float   *> pure FloatT
+       <|> tok Tok_Double  *> pure DoubleT
+       <|> tok Tok_Decimal *> pure DecimalT
+       <|> tok Tok_Object  *> pure ObjectT
+       <|> tok Tok_String  *> pure StringT
+       <|> dynamic         *> pure DynamicT
 
 ------------------------------------------------------------------------
 -- Names and identifiers
