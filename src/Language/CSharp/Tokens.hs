@@ -126,8 +126,8 @@ data Token
     | Tok_Question
     | Tok_Coalesce
     | Tok_NameQual
-    | Tok_Inc
-    | Tok_Dec
+    | Tok_Increment
+    | Tok_Decrement
     | Tok_And
     | Tok_Or
     | Tok_Arrow

@@ -75,6 +75,9 @@ instance Pretty Exp where
     pretty (ThisAccess)            = text "this"
     pretty (BaseMember n)          = text "base" <> dot <> pp n
     pretty (BaseElement idx)       = text "base" <> brackets (pp idx)
+    pretty (PostIncrement exp)     = pp exp <> text "++"
+    pretty (PostDecrement exp)     = pp exp <> text "--"
+    pretty (ObjectCreation t args) = text "new" <+> pp t <> parens (params args)
 
 instance Pretty Arg where
     pretty (Arg i m e) = name i <> mod m <> pp e

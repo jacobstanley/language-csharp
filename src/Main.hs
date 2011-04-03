@@ -62,8 +62,9 @@ analyzeFile path = {-# SCC "analyze" #-} do
     putStrLn $ file ++ ": " ++ show (length tokens)
             ++ " tokens (" ++ encoding ++ ")"
 
-    putStrLn $ "diff -s " ++ file ++ " " ++ file'
-    pid <- runCommand $ "diff -s " ++ path ++ " " ++ path'
+    let diff = "diff -sBI '\\w*//' -I '\\w*#'"
+    putStrLn $ diff ++ " "  ++ file ++ " " ++ file'
+    pid <- runCommand $ diff ++ " " ++ path ++ " " ++ path'
     waitForProcess pid
 
     return (length tokens)

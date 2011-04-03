@@ -30,7 +30,7 @@ namespace Language.CSharp
        \r\n\t\b\a\v\";
 
             // arrays
-            int[,,][,][] xs = null; //new int[0];
+            int[,,][,][] xs = null;
 
             // simple name
             var f = MyFunction<A, B, C>;
@@ -56,6 +56,13 @@ namespace Language.CSharp
             // base access
             var b1 = base.MemberAccess();
             var b2 = base[elementAccess];
+
+            // post increment/decrement
+            var inc = i++;
+            var dec = d--;
+
+            // object creation
+            List<int> xs = new List<int>(106, "whee");
         }
 #if 0
 #  error :(

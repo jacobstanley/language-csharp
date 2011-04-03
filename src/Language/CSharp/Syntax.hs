@@ -49,6 +49,11 @@ data Exp
     | ThisAccess
     | BaseMember Ident
     | BaseElement Exp
+    | PostIncrement Exp
+    | PostDecrement Exp
+    | PreIncrement Exp
+    | PreDecrement Exp
+    | ObjectCreation Type [Arg]
     deriving (Eq, Show)
 
 data Arg = Arg (Maybe Ident) (Maybe ArgMod) Exp

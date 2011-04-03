@@ -159,8 +159,8 @@ while      { constTok Tok_While      }
 \?     { constTok Tok_Question   }
 \?\?   { constTok Tok_Coalesce   }
 \:\:   { constTok Tok_NameQual   }
-\+\+   { constTok Tok_Inc        }
-\-\-   { constTok Tok_Dec        }
+\+\+   { constTok Tok_Increment  }
+\-\-   { constTok Tok_Decrement  }
 \&\&   { constTok Tok_And        }
 \|\|   { constTok Tok_Or         }
 \-\>   { constTok Tok_Arrow      }

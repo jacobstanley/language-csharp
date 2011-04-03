@@ -100,6 +100,7 @@ primary' = Lit <$> literal
        <|> ParenExp <$> parens expression
        <|> thisAccess
        <|> baseAccess
+       <|> objectCreation
 
 literal :: P Literal
 literal = maybeToken $ \t -> case t of
@@ -122,11 +123,20 @@ baseAccess = tok Tok_Base *> access
     access = BaseElement <$> brackets expression
          <|> BaseMember <$> (dot *> ident)
 
+objectCreation :: P Exp
+objectCreation = tok Tok_New *> ctor
+  where
+    ctor = ObjectCreation <$> type_ <*> arguments
+
 --------------------------------
 -- Suffix Expressions
 
 primarySuffix :: P (Exp -> Exp)
-primarySuffix = memberAccess <|> invocation <|> elementAccess
+primarySuffix = memberAccess
+            <|> invocation
+            <|> elementAccess
+            <|> postIncrement
+            <|> postDecrement
 
 memberAccess :: P (Exp -> Exp)
 memberAccess = do
@@ -144,16 +154,14 @@ elementAccess = do
     idx <- brackets expression
     return $ \e -> ElementAccess e idx
 
-arguments :: P [Arg]
-arguments = parens (commaSep argument)
+postIncrement :: P (Exp -> Exp)
+postIncrement = tok Tok_Increment *> pure PostIncrement
 
-argument :: P Arg
-argument = Arg <$> optionMaybe (try $ ident <* colon)
-               <*> optionMaybe argModifier
-               <*> expression
+postDecrement :: P (Exp -> Exp)
+postDecrement = tok Tok_Decrement *> pure PostDecrement
 
 ------------------------------------------------------------------------
--- Formal Parameters
+-- Formal Parameters / Invocation Arguments
 
 formalParams :: P [FormalParam]
 formalParams = parens (commaSep formalParam) <?> "formal parameter list"
@@ -162,6 +170,14 @@ formalParam :: P FormalParam
 formalParam = FormalParam <$> optionMaybe paramModifier
                           <*> type_
                           <*> ident
+
+arguments :: P [Arg]
+arguments = parens (commaSep argument)
+
+argument :: P Arg
+argument = Arg <$> optionMaybe (try $ ident <* colon)
+               <*> optionMaybe argModifier
+               <*> expression
 
 ------------------------------------------------------------------------
 -- Modifiers
