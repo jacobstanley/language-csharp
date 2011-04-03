@@ -45,6 +45,7 @@ data Exp
     | ParenExp Exp
     | MemberAccess Exp Ident [TypeArg]
     | Invocation Exp [Arg]
+    | ElementAccess Exp Exp
     deriving (Eq, Show)
 
 data Arg = Arg (Maybe Ident) (Maybe ArgMod) Exp

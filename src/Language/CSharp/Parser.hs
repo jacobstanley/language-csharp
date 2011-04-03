@@ -120,7 +120,7 @@ literal = maybeToken $ \t -> case t of
 
 
 primarySuffix :: P (Exp -> Exp)
-primarySuffix = memberAccess <|> invocation
+primarySuffix = memberAccess <|> invocation <|> elementAccess
 
 memberAccess :: P (Exp -> Exp)
 memberAccess = do
@@ -132,6 +132,11 @@ invocation :: P (Exp -> Exp)
 invocation = do
     as <- arguments
     return $ \e -> Invocation e as
+
+elementAccess :: P (Exp -> Exp)
+elementAccess = do
+    idx <- brackets expression
+    return $ \e -> ElementAccess e idx
 
 arguments :: P [Arg]
 arguments = parens (commaSep argument)

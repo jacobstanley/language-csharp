@@ -71,6 +71,7 @@ instance Pretty Exp where
     pretty (ParenExp exp)          = parens (pp exp)
     pretty (MemberAccess exp n ts) = pp exp <> dot <> pp n <> pp ts
     pretty (Invocation exp args)   = pp exp <> parens (params args)
+    pretty (ElementAccess exp idx) = pp exp <> brackets (pp idx)
 
 instance Pretty Arg where
     pretty (Arg i m e) = name i <> mod m <> pp e
