@@ -45,7 +45,7 @@ new_line_character:
 	| '<Line separator character (U+2028)>'
 	| '<Paragraph separator character (U+2029)>';
 delimited_comment:
-	| '/*' delimited_comment_text? asterisks '/';
+	| '/*' delimited_comment_text? asterisks '/';       //*/
 delimited_comment_text:
 	| delimited_comment_section
 	| delimited_comment_text delimited_comment_section;
