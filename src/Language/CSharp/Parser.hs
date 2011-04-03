@@ -100,11 +100,14 @@ expression = primary
 primary :: P Exp
 primary = primary' `followedBy` primarySuffix
 
+--------------------------------
+-- Standard Expressions
 
 primary' :: P Exp
 primary' = Lit <$> literal
        <|> SimpleName <$> ident <*> typeArgs
        <|> ParenExp <$> parens expression
+       <|> thisAccess
 
 literal :: P Literal
 literal = maybeToken $ \t -> case t of
@@ -118,6 +121,11 @@ literal = maybeToken $ \t -> case t of
     Tok_VerbatimLit cs -> Just (Verbatim cs)
     _                  -> Nothing
 
+thisAccess :: P Exp
+thisAccess = tok Tok_This *> pure ThisAccess
+
+--------------------------------
+-- Suffix Expressions
 
 primarySuffix :: P (Exp -> Exp)
 primarySuffix = memberAccess <|> invocation <|> elementAccess

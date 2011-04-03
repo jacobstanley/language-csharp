@@ -72,6 +72,7 @@ instance Pretty Exp where
     pretty (MemberAccess exp n ts) = pp exp <> dot <> pp n <> pp ts
     pretty (Invocation exp args)   = pp exp <> parens (params args)
     pretty (ElementAccess exp idx) = pp exp <> brackets (pp idx)
+    pretty (ThisAccess)            = text "this"
 
 instance Pretty Arg where
     pretty (Arg i m e) = name i <> mod m <> pp e

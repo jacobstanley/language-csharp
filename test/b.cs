@@ -44,8 +44,14 @@ namespace Language.CSharp
             // invocation
             Test123 z = x.Property.Invoke().MethodCall<A, B>(a, ref b, out c);
             Lang.MyClass<int, B> x = AnotherMethod(true, 10.1m, 'x');
+
+            // element access
             var z1 = xs[0];
             var z2 = x.GetArray()[x.BestIndex()];
+
+            // this access
+            var z3 = this;
+            var z4 = this[10];
         }
 #if 0
 #  error :(
