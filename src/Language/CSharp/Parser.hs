@@ -108,6 +108,7 @@ primary' = Lit <$> literal
        <|> SimpleName <$> ident <*> typeArgs
        <|> ParenExp <$> parens expression
        <|> thisAccess
+       <|> baseAccess
 
 literal :: P Literal
 literal = maybeToken $ \t -> case t of
@@ -123,6 +124,12 @@ literal = maybeToken $ \t -> case t of
 
 thisAccess :: P Exp
 thisAccess = tok Tok_This *> pure ThisAccess
+
+baseAccess :: P Exp
+baseAccess = tok Tok_Base *> access
+  where
+    access = BaseElement <$> brackets expression
+         <|> BaseMember <$> (dot *> ident)
 
 --------------------------------
 -- Suffix Expressions

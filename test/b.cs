@@ -52,6 +52,10 @@ namespace Language.CSharp
             // this access
             var z3 = this;
             var z4 = this[10];
+
+            // base access
+            var b1 = base.MemberAccess();
+            var b2 = base[elementAccess];
         }
 #if 0
 #  error :(

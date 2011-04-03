@@ -47,6 +47,8 @@ data Exp
     | Invocation Exp [Arg]
     | ElementAccess Exp Exp
     | ThisAccess
+    | BaseMember Ident
+    | BaseElement Exp
     deriving (Eq, Show)
 
 data Arg = Arg (Maybe Ident) (Maybe ArgMod) Exp
