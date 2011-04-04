@@ -78,8 +78,8 @@ instance Pretty Exp where
     pretty (PostIncrement exp)      = pp exp <> text "++"
     pretty (PostDecrement exp)      = pp exp <> text "--"
 
-    pretty (ObjectCreation t [] (Just oi)) = new t $+$ pp oi
-    pretty (ObjectCreation t as (Just oi)) = new t <> invoke as $+$ pp oi
+    pretty (ObjectCreation t [] (Just oi)) = new t <+> pp oi
+    pretty (ObjectCreation t as (Just oi)) = new t <> invoke as <+> pp oi
     pretty (ObjectCreation t as Nothing)   = new t <> invoke as
 
 new :: Pretty a => a -> Doc
@@ -94,7 +94,7 @@ instance Pretty Arg where
         mod (Just m')  = pp m' <> space
 
 instance Pretty ObjectInit where
-    pretty (ObjectInit ms) = block (vcat' ms)
+    pretty (ObjectInit ms) = lineBlock $ vcat $ punctuate comma $ map pp ms
 
 instance Pretty MemberInit where
     pretty (MemberInit n v) = pp n <+> equals <+> pp v
@@ -201,9 +201,10 @@ indent :: Int
 indent = 4
 
 block :: Doc -> Doc
-block x = char '{'
-      $+$ nest indent x
-      $+$ char '}'
+block x = char '{' $+$ nest indent x $+$ char '}'
+
+lineBlock :: Doc -> Doc
+lineBlock x = char '{' <+> x <+> char '}'
 
 invoke :: Pretty a => [a] -> Doc
 invoke xs = parens (params xs)

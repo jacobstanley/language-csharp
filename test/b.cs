@@ -64,16 +64,9 @@ namespace Language.CSharp
 
             // object creation
             List<int> xs = new List<int>(106, "whee");
-            Person obj = new Person
-                         {
-                             Name = "Fred"
-                         };
-
-            Boat b = new Boat("yeah", 1)
-                     {
-                         ImOnIt = true,
-                         //Nested = { Yes = It { Is = true } },
-                     };
+            Person obj = new Person { Name = "Fred" };
+            Boat b = new Boat("yeah", 1) { ImOnIt = true,
+                                           Nested = { Yes = { It = { Is = true } } } };
         }
 #if 0
 #  error :(
