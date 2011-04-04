@@ -61,9 +61,13 @@ data Arg = Arg (Maybe Ident) (Maybe ArgMod) Exp
 
 data ObjectInit
     = ObjectInit [MemberInit]
+    | CollectionInit [ElementInit]
     deriving (Eq, Show)
 
 data MemberInit = MemberInit Ident InitVal
+    deriving (Eq, Show)
+
+data ElementInit = ElementInit [Exp]
     deriving (Eq, Show)
 
 data InitVal

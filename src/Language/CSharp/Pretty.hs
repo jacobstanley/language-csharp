@@ -94,7 +94,8 @@ instance Pretty Arg where
         mod (Just m')  = pp m' <> space
 
 instance Pretty ObjectInit where
-    pretty (ObjectInit ms) = lineBlock $ vcat $ punctuate comma $ map pp ms
+    pretty (ObjectInit ms) = lineBlock $ sep' comma ms
+    pretty (CollectionInit es) = lineBlock $ sep' comma es
 
 instance Pretty MemberInit where
     pretty (MemberInit n v) = pp n <+> equals <+> pp v
@@ -102,6 +103,10 @@ instance Pretty MemberInit where
 instance Pretty InitVal where
     pretty (InitVal exp)   = pp exp
     pretty (InitObject oi) = pp oi
+
+instance Pretty ElementInit where
+    pretty (ElementInit (x:[])) = pp x
+    pretty (ElementInit xs) = lineBlock $ hcatSep' (comma <> space) xs
 
 instance Pretty Literal where
     pretty (Null)        = text "null"
@@ -204,7 +209,7 @@ block :: Doc -> Doc
 block x = char '{' $+$ nest indent x $+$ char '}'
 
 lineBlock :: Doc -> Doc
-lineBlock x = char '{' <+> x <+> char '}'
+lineBlock = braces . spaces
 
 invoke :: Pretty a => [a] -> Doc
 invoke xs = parens (params xs)
@@ -214,6 +219,9 @@ params = hcatSep' (comma <> space)
 
 angles :: Doc -> Doc
 angles d = char '<' <> d <> char '>'
+
+spaces :: Doc -> Doc
+spaces d = space <> d <> space
 
 dot :: Doc
 dot = char '.'
@@ -235,6 +243,9 @@ vsep' = vsep . intersperse blank . map pretty
 
 vcat' :: Pretty a => [a] -> Doc
 vcat' = vcat . map pretty
+
+sep' :: Pretty a => Doc -> [a] -> Doc
+sep' s = sep . punctuate s . map pretty
 
 hcat' :: Pretty a => [a] -> Doc
 hcat' = hcat . map pretty

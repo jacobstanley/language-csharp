@@ -67,6 +67,10 @@ namespace Language.CSharp
             Person obj = new Person { Name = "Fred" };
             Boat b = new Boat("yeah", 1) { ImOnIt = true,
                                            Nested = { Yes = { It = { Is = true } } } };
+            List<int> xs = new List<int> { 1, 2, 3 };
+            var d = new Dictionary<string, string> { { "A", "Alpha" },
+                                                     { "B", "Bravo" },
+                                                     { "C", "Charlie" } };
         }
 #if 0
 #  error :(

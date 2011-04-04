@@ -138,7 +138,8 @@ objectCreation = do
     initializer (Just _) = optional objectInitializer
 
 objectInitializer :: P ObjectInit
-objectInitializer = ObjectInit <$> braces (memberInitializer `sepEndBy` comma)
+objectInitializer = ObjectInit <$> try (braces $ memberInitializer `sepEndBy` comma)
+                <|> CollectionInit <$> braces (elementInitializer `sepEndBy` comma)
 
 memberInitializer :: P MemberInit
 memberInitializer = MemberInit <$> ident <*> (assign *> initializerValue)
@@ -146,6 +147,10 @@ memberInitializer = MemberInit <$> ident <*> (assign *> initializerValue)
 initializerValue :: P InitVal
 initializerValue = InitObject <$> objectInitializer
                <|> InitVal <$> expression
+
+elementInitializer :: P ElementInit
+elementInitializer = ElementInit <$> braces (expression `sepBy` comma)
+                 <|> ElementInit <$> (return <$> expression)
 
 --------------------------------
 -- Suffix Expressions
