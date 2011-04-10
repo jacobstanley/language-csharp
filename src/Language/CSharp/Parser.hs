@@ -6,11 +6,11 @@ module Language.CSharp.Parser
     , CompilationUnit (..)
     ) where
 
-import           Control.Applicative
+import           Control.Applicative hiding (many)
 import           Data.ByteString (ByteString)
 import           Data.List (foldl')
 import           Data.Text (Text)
-import           Text.Parsec hiding (many, optional, (<|>))
+import           Text.Parsec hiding (optional, (<|>))
 import           Text.Parsec.String (GenParser)
 import           Text.Parsec.Pos
 import qualified Text.Parsec as Parsec
@@ -39,9 +39,9 @@ namespace = do
 -- Declarations
 
 typeDecl :: P TypeDecl
-typeDecl = withModifiers class_ <?> "type declaration"
+typeDecl = many classModifier >>= class_ <?> "type declaration"
 
-class_ :: [Mod] -> P TypeDecl
+class_ :: [ClassMod] -> P TypeDecl
 class_ ms = do
     tok Tok_Class
     Class <$> pure ms
@@ -49,9 +49,9 @@ class_ ms = do
           <*> braces (many member)
 
 member :: P Method
-member = withModifiers method
+member = many methodModifier >>= method
 
-method :: [Mod] -> P Method
+method :: [MethodMod] -> P Method
 method ms = Method <$> pure ms
                    <*> returnType
                    <*> (ident <?> "method identifier")
@@ -206,20 +206,32 @@ argument = Arg <$> optionMaybe (try $ ident <* colon)
 ------------------------------------------------------------------------
 -- Modifiers
 
-withModifiers :: ([Mod] -> P a) -> P a
-withModifiers p = many modifier >>= p
+classModifier :: P ClassMod
+classModifier = tok Tok_New       *> pure NewC
+            <|> tok Tok_Public    *> pure PublicC
+            <|> tok Tok_Protected *> pure ProtectedC
+            <|> tok Tok_Internal  *> pure InternalC
+            <|> tok Tok_Private   *> pure PrivateC
+            <|> tok Tok_Abstract  *> pure AbstractC
+            <|> tok Tok_Sealed    *> pure SealedC
+            <|> tok Tok_Static    *> pure StaticC
+            <|> tok Tok_Unsafe    *> pure UnsafeC
+            <?> "class modifier (e.g. public)"
 
-modifier :: P Mod
-modifier = tok Tok_New       *> pure New
-       <|> tok Tok_Public    *> pure Public
-       <|> tok Tok_Protected *> pure Protected
-       <|> tok Tok_Internal  *> pure Internal
-       <|> tok Tok_Private   *> pure Private
-       <|> tok Tok_Abstract  *> pure Abstract
-       <|> tok Tok_Sealed    *> pure Sealed
-       <|> tok Tok_Static    *> pure Static
-       <|> tok Tok_Unsafe    *> pure Unsafe
-       <?> "modifier (e.g. public)"
+methodModifier :: P MethodMod
+methodModifier = tok Tok_New       *> pure NewM
+             <|> tok Tok_Public    *> pure PublicM
+             <|> tok Tok_Protected *> pure ProtectedM
+             <|> tok Tok_Internal  *> pure InternalM
+             <|> tok Tok_Private   *> pure PrivateM
+             <|> tok Tok_Static    *> pure StaticM
+             <|> tok Tok_Virtual   *> pure VirtualM
+             <|> tok Tok_Sealed    *> pure SealedM
+             <|> tok Tok_Override  *> pure OverrideM
+             <|> tok Tok_Abstract  *> pure AbstractM
+             <|> tok Tok_Extern    *> pure ExternM
+             <|> tok Tok_Unsafe    *> pure UnsafeM
+             <?> "method modifier (e.g. public)"
 
 paramModifier :: P ParamMod
 paramModifier = tok Tok_Ref  *> pure RefParam

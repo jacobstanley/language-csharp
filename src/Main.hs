@@ -1,27 +1,62 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Main (main) where
 
 import           Control.Concurrent
-import           Codec.Text.Detect (detectEncodingName)
+--import           Codec.Text.Detect (detectEncodingName)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Encoding.Error as T
+import           Debug.Trace (trace)
 import           System.Directory
 import           System.Environment
 import           System.FilePath
 import           System.Process
 
+import           Test.QuickCheck
+
+import           Language.CSharp.Arbitrary
 import           Language.CSharp.Lexer
 import           Language.CSharp.Parser
 import           Language.CSharp.Pretty
 
+------------------------------------------------------------------------
+-- QuickCheck
+
 main :: IO ()
 main = do
+    result <- quickCheckWithResult args prop_roundtrip
+    putStrLn $ "replay = read \"Just ("
+            ++ show (usedSeed result) ++ ", "
+            ++ show (usedSize result) ++ ")\""
+  where
+    args = stdArgs
+         { maxSuccess = 1000
+         , maxSize = 3
+         , chatty = False
+         , replay = read "Just (969080827 2147483396, 2)"
+         }
+
+prop_roundtrip (ast :: CompilationUnit) =
+    case parseCSharp sourceName tokens of
+      Left e  -> trace (source ++ "\n" ++ show e) False
+      Right a -> a == ast
+  where
+    source     = render' ast
+    sourceName = "[Generated C#]"
+    tokens     = lexer sourceName (T.pack source)
+
+------------------------------------------------------------------------
+-- Parsing external files
+
+{-
+main' :: IO ()
+main' = do
     args <- getArgs
     fs <- getFiles (if null args then "." else head args)
 
@@ -111,3 +146,4 @@ fork1 f x = do
     cell <- newEmptyMVar
     forkIO $ do { result <- f x; putMVar cell $! result }
     return cell
+-}

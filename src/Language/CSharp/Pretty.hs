@@ -37,12 +37,12 @@ instance Pretty Namespace where
 
 instance Pretty TypeDecl where
     pretty (Class mds n ms) =
-        hcat' mds <+> text "class" <+> pp n
+        hsep' mds <+> text "class" <+> pp n
         $+$ block (vsep' ms)
 
 instance Pretty Method where
     pretty (Method ms t n ps stmts) =
-        hcat' ms <+> pp t <+> pp n <> parens (params ps)
+        hsep' ms <+> pp t <+> pp n <> parens (params ps)
         $+$ block (vcat' stmts)
 
 instance Pretty FormalParam where
@@ -66,17 +66,19 @@ instance Pretty Stmt where
 -- Expressions
 
 instance Pretty Exp where
-    pretty (Lit lit)                = pp lit
-    pretty (SimpleName n ts)        = pp n <> pp ts
-    pretty (ParenExp exp)           = parens (pp exp)
-    pretty (MemberAccess exp n ts)  = pp exp <> dot <> pp n <> pp ts
-    pretty (Invocation exp args)    = pp exp <> invoke args
-    pretty (ElementAccess exp ixs)  = pp exp <> brackets (params ixs)
-    pretty (ThisAccess)             = text "this"
-    pretty (BaseMember n)           = text "base" <> dot <> pp n
-    pretty (BaseElement ixs)        = text "base" <> brackets (params ixs)
-    pretty (PostIncrement exp)      = pp exp <> text "++"
-    pretty (PostDecrement exp)      = pp exp <> text "--"
+    pretty (Lit lit)               = pp lit
+    pretty (SimpleName n ts)       = pp n <> pp ts
+    pretty (ParenExp exp)          = parens (pp exp)
+    pretty (MemberAccess exp n ts) = pp exp <> dot <> pp n <> pp ts
+    pretty (Invocation exp args)   = pp exp <> invoke args
+    pretty (ElementAccess exp ixs) = pp exp <> brackets (params ixs)
+    pretty (ThisAccess)            = text "this"
+    pretty (BaseMember n)          = text "base" <> dot <> pp n
+    pretty (BaseElement ixs)       = text "base" <> brackets (params ixs)
+    pretty (PostIncrement exp)     = pp exp <> text "++"
+    pretty (PostDecrement exp)     = pp exp <> text "--"
+--    pretty (PreIncrement exp)      = text "++" <> pp exp
+--    pretty (PreDecrement exp)      = text "--" <> pp exp
 
     pretty (ObjectCreation t [] (Just oi)) = new t <+> pp oi
     pretty (ObjectCreation t as (Just oi)) = new t <> invoke as <+> pp oi
@@ -158,19 +160,30 @@ instance Pretty PrimType where
     pretty StringT  = text "string"
     pretty DynamicT = text "dynamic"
 
-instance Pretty Mod where
-    pretty New       = text "new"
-    pretty Public    = text "public"
-    pretty Protected = text "protected"
-    pretty Internal  = text "internal"
-    pretty Private   = text "private"
-    pretty Abstract  = text "abstract"
-    pretty Virtual   = text "virtual"
-    pretty Override  = text "override"
-    pretty Sealed    = text "sealed"
-    pretty Static    = text "static"
-    pretty Extern    = text "extern"
-    pretty Unsafe    = text "unsafe"
+instance Pretty ClassMod where
+    pretty NewC       = text "new"
+    pretty PublicC    = text "public"
+    pretty ProtectedC = text "protected"
+    pretty InternalC  = text "internal"
+    pretty PrivateC   = text "private"
+    pretty AbstractC  = text "abstract"
+    pretty SealedC    = text "sealed"
+    pretty StaticC    = text "static"
+    pretty UnsafeC    = text "unsafe"
+
+instance Pretty MethodMod where
+    pretty NewM       = text "new"
+    pretty PublicM    = text "public"
+    pretty ProtectedM = text "protected"
+    pretty InternalM  = text "internal"
+    pretty PrivateM   = text "private"
+    pretty AbstractM  = text "abstract"
+    pretty VirtualM   = text "virtual"
+    pretty OverrideM  = text "override"
+    pretty SealedM    = text "sealed"
+    pretty StaticM    = text "static"
+    pretty ExternM    = text "extern"
+    pretty UnsafeM    = text "unsafe"
 
 instance Pretty ParamMod where
     pretty RefParam  = text "ref"
@@ -247,8 +260,8 @@ vcat' = vcat . map pretty
 sep' :: Pretty a => Doc -> [a] -> Doc
 sep' s = sep . punctuate s . map pretty
 
-hcat' :: Pretty a => [a] -> Doc
-hcat' = hcat . map pretty
+hsep' :: Pretty a => [a] -> Doc
+hsep' = hsep . map pretty
 
 hcatSep :: Doc -> [Doc] -> Doc
 hcatSep s = hcat . intersperse s

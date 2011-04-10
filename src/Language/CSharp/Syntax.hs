@@ -15,10 +15,10 @@ data Namespace = Namespace Name [TypeDecl]
 ------------------------------------------------------------------------
 -- Declarations
 
-data TypeDecl = Class [Mod] Ident [Method]
+data TypeDecl = Class [ClassMod] Ident [Method]
     deriving (Eq, Show)
 
-data Method = Method [Mod] (Maybe Type) Ident [FormalParam] [Stmt]
+data Method = Method [MethodMod] (Maybe Type) Ident [FormalParam] [Stmt]
     deriving (Eq, Show)
 
 data FormalParam = FormalParam (Maybe ParamMod) Type Ident
@@ -51,8 +51,8 @@ data Exp
     | BaseElement [Exp]
     | PostIncrement Exp
     | PostDecrement Exp
-    | PreIncrement Exp
-    | PreDecrement Exp
+--    | PreIncrement Exp
+--    | PreDecrement Exp
     | ObjectCreation Type [Arg] (Maybe ObjectInit)
     deriving (Eq, Show)
 
@@ -125,19 +125,31 @@ data PrimType
 ------------------------------------------------------------------------
 -- Modifiers
 
-data Mod
-    = New
-    | Public
-    | Protected
-    | Internal
-    | Private
-    | Abstract
-    | Virtual
-    | Override
-    | Static
-    | Sealed
-    | Extern
-    | Unsafe
+data ClassMod
+    = NewC
+    | PublicC
+    | ProtectedC
+    | InternalC
+    | PrivateC
+    | AbstractC
+    | SealedC
+    | StaticC
+    | UnsafeC
+    deriving (Eq, Show)
+
+data MethodMod
+    = NewM
+    | PublicM
+    | ProtectedM
+    | InternalM
+    | PrivateM
+    | StaticM
+    | VirtualM
+    | SealedM
+    | OverrideM
+    | AbstractM
+    | ExternM
+    | UnsafeM
     deriving (Eq, Show)
 
 data ParamMod = RefParam | OutParam | ThisParam

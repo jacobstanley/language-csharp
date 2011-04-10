@@ -20,10 +20,13 @@ executable language-csharp
   build-tools: alex
 
   build-depends:
+    derive == 2.4.*,
+    QuickCheck == 2.4.*,
+
     array == 0.3.*,
     base == 4.*,
     bytestring == 0.9.*,
-    charsetdetect,
+    --charsetdetect,
     directory,
     filepath,
     mtl == 2.0.*,
